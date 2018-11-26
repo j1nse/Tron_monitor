@@ -10,9 +10,18 @@
 - [ ] Learn to analysis and processing
 - [ ] Design and Programming
 
+---------
+
+### target
+
+- [ ] TRON large transfer monitoring
+- [ ] Top DApp DAU/balance/etc. Data collection
+
 -----
 
 ### time
+
+ends on 12.10
 
 ----
 
