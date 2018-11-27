@@ -5,8 +5,8 @@
 
 ## plan
 
-- [ ] Understand the differences between Ether and Tron
-- [ ] Learn to crawl data from Tron
+- [x] Understand the differences between Ether and Tron
+- [x] Learn to crawl data from Tron
 - [ ] Learn to analysis and processing
 - [ ] Design and Programming
 
@@ -26,4 +26,6 @@ ends on 12.10
 ----
 
 ### other
+
+Grpc local environment compiled
 
