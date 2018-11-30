@@ -27,5 +27,13 @@ ends on 12.10
 
 ### other
 
-Grpc local environment compiled
+~~Grpc local environment compiled~~(use HTTP)
+
+### mind
+
+need a database
+
+
+
+
 
