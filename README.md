@@ -7,8 +7,9 @@
 
 - [x] Understand the differences between Ether and Tron
 - [x] Learn to crawl data from Tron
-- [ ] Learn to analysis and processing
-- [ ] Design and Programming
+- [x] Learn to analysis and processing
+- [x] Design and Programming
+- [ ] Implement the daemon process and improve the rest of the logic
 
 ---------
 
@@ -21,7 +22,7 @@
 
 ### time
 
-ends on 12.10
+ends on 12.10(but I have to prepare for the examination...)
 
 ----
 
@@ -31,7 +32,7 @@ ends on 12.10
 
 ### mind
 
-need a database
+feel good
 
 
 
