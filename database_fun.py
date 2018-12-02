@@ -14,6 +14,7 @@ VALUES ({},{},{}) \
     )
     cursor.execute(word)
     db.commit()
+    cursor.close()
 
 
 def insert_transaction(db, transaction):
@@ -30,6 +31,7 @@ VALUES ({},{},{},{}) \
     )
     cursor.execute(word)
     db.commit()
+    cursor.close()
 
 
 def insert_raw_data(db, transaction):
@@ -46,6 +48,7 @@ VALUES ({},{},{},{}) \
     )
     cursor.execute(word)
     db.commit()
+    cursor.close()
 
 
 def insert_top_DAPP(db, top):
@@ -62,30 +65,34 @@ VALUES ({},{},{},{}) \
     )
     cursor.execute(word)
     db.commit()
+    cursor.close()
 
 
 def insert_big_transfer(db, transaction):
     cursor = db.cursor()
     word = '''\
-INSERT INTO raw_data \
-( owner_address, to_address, amount ) \
-VALUES ({},{},{}) \	
+INSERT INTO big_transfer \
+( txID,owner_address, to_address, amount ) \
+VALUES ({},{},{},{}) \	
 '''.format(
+        dumps(transaction.get_txID()),
         dumps(transaction.get_owner()),
         dumps(transaction.get_get_to_address()),
         dumps(transaction.get_amount()),
     )
     cursor.execute(word)
     db.commit()
+    cursor.close()
 
 
 def insert_big_token_transfer(db, transaction):
     cursor = db.cursor()
     word = '''\
-INSERT INTO raw_data \
-( owner_address, to_address, amount ) \
-VALUES ({},{},{}) \	
+INSERT INTO big_token_transfer \
+( txID,asset_name,owner_address, to_address, amount ) \
+VALUES ({},{},{},{},{}) \	
 '''.format(
+        dumps(transaction.get_txID()),
         dumps(transaction.get_asset_name()),
         dumps(transaction.get_owner_address()),
         dumps(transaction.get_to_address()),
@@ -93,3 +100,52 @@ VALUES ({},{},{}) \
     )
     cursor.execute(word)
     db.commit()
+    cursor.close()
+
+
+def query_big_transfer(db):
+    cursor = db.cursor()
+    word = '''\
+    SELECT txID,owner_address,to_address,amount,others \
+    FROM big_transfer ORDER BY amount DESC \
+    '''
+    cursor.execute(word)
+    tmp = cursor.fetchall()
+    cursor.close()
+    return tmp
+
+
+def query_big_token_transfer(db):
+    cursor = db.cursor()
+    word = '''\
+    SELECT txID,asset_name,owner_address,to_address,amount,others \
+    FROM big_token_transfer ORDER BY amount DESC \
+    '''
+    cursor.execute(word)
+    tmp = cursor.fetchall()
+    cursor.close()
+    return tmp
+
+
+def query_top_app(db):
+    cursor = db.cursor()
+    word = '''\
+    SELECT address,all_transaction_count,day_transaction,balance \
+    FROM top_DAPP ORDER BY all_transaction_count DESC \
+    '''
+    cursor.execute(word)
+    tmp = cursor.fetchall()
+    cursor.close()
+    return tmp
+
+
+def update_top_app(db, address, all_transaction_count, day_transaction, balance):
+    cursor = db.cursor()
+    word = '''\
+    UPDATE top_DAPP SET all_transaction_count = {},day_transaction={},balance={} WHERE address = '{}' \
+    '''.format(
+        address, all_transaction_count, day_transaction, balance
+    )
+    cursor.execute(word)
+    db.commit()
+    cursor.close()

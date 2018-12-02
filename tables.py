@@ -30,22 +30,24 @@ CREATE TABLE `top_DAPP` ( \
 address char(42) PRIMARY KEY NOT NULL, \
 all_transaction_count  BIGINT NOT NULL, \
 day_transaction BIGINT NOT NULL, \
-balance_count BIGINT NOT NULL \
+balance BIGINT NOT NULL \
 ) \
 '''
 
 _tables['big_transfer'] = ''' \
 CREATE TABLE `big_transfer`( \
-id  INT NOT NULL AUTO_INCREMENT PRIMARY KEY, \
+`txID` char(64) PRIMARY KEY NOT NULL, \
 owner_address char(42), \
 to_address  char(42), \
 amount FLOAT, \
 others varchar(1024) \
 ) \
 '''
+
 _tables['big_token_transfer'] = ''' \
 CREATE TABLE `big_token_transfer`( \
-asset_name varchar(25) PRIMARY KEY, \
+`txID` char(64) PRIMARY KEY NOT NULL , \
+asset_name varchar(25) ,\
 owner_address char(42), \
 to_address char(42), \
 amount FLOAT, \

@@ -1,4 +1,4 @@
-class Transactions:
+class Transaction:
     txID = ''
     ret = []
     signature = []
@@ -6,13 +6,13 @@ class Transactions:
     txdata = {}
     type = ''
 
-    def __init__(self, txID, ret, signature, raw_data):
-        self.txID = txID
-        self.ret = ret
-        self.signature = signature
-        self.raw_data = raw_data
-        self.txdata = raw_data['contract'][0]['parameter']['value']
-        self.type = raw_data['contract'][0]['type']
+    def __init__(self, tx):
+        self.txID = tx['txID']
+        self.ret = tx['ret']
+        self.signature = tx['signature']
+        self.raw_data = tx['raw_data']
+        self.txdata = tx['raw_data']['contract'][0]['parameter']['value']
+        self.type = tx['raw_data']['contract'][0]['type']
 
     def get_txID(self):
         return self.txID
@@ -42,7 +42,7 @@ class Transactions:
         return self.raw_data['contract']
 
     def get_amount(self):
-        return self.txdata['amount']
+        return self.txdata['amount'] if 'amount' in self.txdata else self.txdata['quant']
 
     def get_to_address(self):
         return self.txdata['to_address']
@@ -51,7 +51,7 @@ class Transactions:
         return self.txdata['contract_address']
 
     def get_call_value(self):
-        if self.txdata['call_value']:
+        if 'call_value' in self.txdata:
             return self.txdata['call_value']
         else:
             return ''
@@ -100,7 +100,7 @@ class Block:
         self.blockID = ori['blockID']
         self.block_header = ori['block_header']
         for i in ori['transactions']:
-            self.transactions[i['txID']] = i['raw_data']['contract'][0]['type']
+            self.transactions[i['txID']] = i
 
     def get_transactions(self):
         return self.transactions
