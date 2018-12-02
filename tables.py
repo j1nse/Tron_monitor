@@ -1,3 +1,5 @@
+# 这个文件包含所有数据库的表的设计
+
 _tables = dict()
 _tables['block'] = ''' \
 CREATE TABLE `block` ( \

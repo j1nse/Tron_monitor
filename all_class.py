@@ -1,3 +1,9 @@
+# 这个文件包含3个类
+# Transaction
+# Top
+# Block
+# 用来实例化后实行解析操作
+
 class Transaction:
     txID = ''
     ret = []

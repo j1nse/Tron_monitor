@@ -1,5 +1,5 @@
 from json import loads, dumps
-
+# 这个文件里包含所有针对数据库的函数，根据名字就知道作用了
 
 def insert_block(db, block):
     cursor = db.cursor()
@@ -149,3 +149,4 @@ def update_top_app(db, address, all_transaction_count, day_transaction, balance)
     cursor.execute(word)
     db.commit()
     cursor.close()
+

@@ -21,12 +21,14 @@ mydb = 0
 cursor = 0
 tron = 0
 api = 0
+top_list = {}
 data_json = {}
 Max_transfer = 0
 Max_transfer_token = 0
 
 
 def init_config():
+
     # 没有配置文件,初始化一个
     _full_node = input('please input the full_node url, if you want to init config yourself,please input 666')
     if _full_node == '666':
@@ -64,7 +66,7 @@ def init_create_db():
     cursor = mydb.cursor()
     cursor.execute("CREATE DATABASE {}".format(data_json['database']))
 
-    # 批量初始化表
+    # 批量建表
     for table_name in tables._tables:
         table_description = tables._tables[table_name]
         try:
@@ -111,6 +113,7 @@ def init():
         else:
             print(err)
             return False
+
     # 连接API(http)
     tron = Tron(full_node=data_json['full_node'],
                 solidity_node=data_json['solidity_node'],
@@ -122,23 +125,45 @@ def init():
     return True
 
 
+# 清屏(等学会写UI后，这个就没用了,不过命令行还是挺hack style的:)
 def clear_screen():
     os.system('cls')
 
 
 def work_begin():
-    global api, mydb
+    global api, mydb, top_list
     last_block = ''
+    init_top_list()
+
+    # 循环获取块信息，并解析
     while True:
+
+        # 如果是块没更新，就再跳过，总之不能漏
         new_block = Block(api.get_current_block())
         if last_block == new_block.get_number():
             continue
         else:
             last_block = new_block.get_number()
         trans = new_block.get_transactions()
+
+        # 针对块里的每一个交易，都实例化一个类，并进行分析
         for txid, tx in trans.iteritems():
             tx = Transaction(tx)
             txtype = tx.get_type()
+
+            # 判断交易是否涉及TOP_APP,涉及则更新数据
+            if tx.get_contract_address() in top_list:
+                top_list[tx.get_contract_address()]['all_transaction_count'] += 1
+                top_list[tx.get_contract_address()]['day_transaction'] += 1
+                top_list[tx.get_contract_address()]['balance'] = api.get_balance(tx.get_contract_address())
+                # 这里或许可以优化一下？不知道一直操作数据库会不会不太好，但是不这样程序意外退出可能造成数据丢失
+                update_top_app(
+                    mydb,
+                    tx.get_contract_address(),
+                    top_list[tx.get_contract_address()]['all_transaction_count'],
+                    top_list[tx.get_contract_address()]['day_transaction'],
+                    top_list[tx.get_contract_address()]['balance']
+                )
 
             # transfer token
             if txtype == 'TransferAssetContract':
@@ -165,6 +190,14 @@ def work_begin():
                 continue
 
 
+# 初始化一个TOP_app字典，key是address, vaule是app的信息
+def init_top_list():
+    global mydb, top_list
+    for i in query_top_app(mydb):
+        top_list[i['address']] = i
+
+
+# 查询数据库里的数据
 def query_data():
     global mydb
     clear_screen()
@@ -204,6 +237,7 @@ def query_data():
             print('wrong input')
 
 
+# 初始化一个新的TOP_app
 def set_app():
     global mydb, api
     address = input('please input the address of app')
@@ -212,7 +246,9 @@ def set_app():
     insert_top_DAPP(mydb, top)
 
 
+# 程序入口
 def main():
+    # 初始化操作，连接数据库，连接API
     if not init():
         print('init error')
         return False
@@ -221,7 +257,8 @@ def main():
         '''
         1.begin work
         2.Query data
-        3.set top app
+        3.set top app(restart begin work to activate it)
+        4.clear block data in database
         '''
     )
     while True:
@@ -231,7 +268,8 @@ def main():
             query_data()
         elif chose == '3':
             set_app()
-            continue
+        elif chose == '4':
+            pass
 
 
 if __name__ == '__main__':
