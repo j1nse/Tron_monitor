@@ -26,6 +26,8 @@ class Transaction:
     def get_ret(self):
         return self.ret
 
+    def get_owner_address(self):
+        return self.txdata['owner_address']
     def get_signature(self):
         return self.signature
 
@@ -51,7 +53,7 @@ class Transaction:
         return self.txdata['amount'] if 'amount' in self.txdata else self.txdata['quant']
 
     def get_to_address(self):
-        return self.txdata['to_address']
+        return self.txdata['to_address'] if 'to_addres'in self.txdata else '000000000000000000000000000000000000000000'
 
     def get_contract_address(self):
         return self.txdata['contract_address']
@@ -69,20 +71,24 @@ class Transaction:
         return self.raw_data['timestamp']
 
     def get_asset_name(self):
-        return self.txdata['asset_name']
+        return self.txdata['asset_name'] if 'asset_name' in self.txdata else self.txdata['token_id']
 
 
 class Top:
     address = ''
     all_transaction_count = 0
     day_transaction = 0
-    balance_count = 0
+    balance = 0
+    day_users = 0
+    day_transfer = 0
 
-    def __init__(self, address, all_transaction_count=0, day_transaction=0, balance_count=0):
+    def __init__(self, address, all_transaction_count=0, day_transaction=0, balance=0, day_users=0, day_transfer=0):
         self.address = address
         self.all_transaction_count = all_transaction_count
         self.day_transaction = day_transaction
-        self.balance_count = balance_count
+        self.balance = balance
+        self.day_users = day_users
+        self.day_transfer = day_transfer
 
     def get_address(self):
         return self.address
@@ -93,8 +99,14 @@ class Top:
     def get_day_transaction(self):
         return self.all_transaction_count
 
-    def get_balance_count(self):
-        return self.balance_count
+    def get_balance(self):
+        return self.balance
+
+    def get_day_users(self):
+        return self.day_users
+
+    def get_day_transfer(self):
+        return self.day_transfer
 
 
 class Block:
