@@ -54,7 +54,7 @@ others varchar(1024) \
 _tables['big_token_transfer'] = ''' \
 CREATE TABLE `big_token_transfer`( \
 `txID` varchar(70) PRIMARY KEY NOT NULL , \
-asset_name varchar(30) ,\
+asset_name varchar(70) ,\
 owner_address varchar(50), \
 to_address varchar(50), \
 amount FLOAT, \

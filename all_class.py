@@ -28,6 +28,7 @@ class Transaction:
 
     def get_owner_address(self):
         return self.txdata['owner_address']
+
     def get_signature(self):
         return self.signature
 
@@ -53,7 +54,7 @@ class Transaction:
         return self.txdata['amount'] if 'amount' in self.txdata else self.txdata['quant']
 
     def get_to_address(self):
-        return self.txdata['to_address'] if 'to_addres'in self.txdata else '000000000000000000000000000000000000000000'
+        return self.txdata['to_address'] if 'to_address'in self.txdata else '000000000000000000000000000000000000000000'
 
     def get_contract_address(self):
         return self.txdata['contract_address']
@@ -112,11 +113,12 @@ class Top:
 class Block:
     blockID = ''
     block_header = {}
-    transactions = {}
+    transactions = dict()
 
     def __init__(self, ori):
         self.blockID = ori['blockID']
         self.block_header = ori['block_header']
+        self.transactions.clear()
         for i in ori['transactions']:
             self.transactions[i['txID']] = i
 

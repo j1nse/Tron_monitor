@@ -24,8 +24,8 @@ tron = 0
 api = 0
 top_list = {}
 data_json = {}
-Max_transfer = 10**8
-Max_transfer_token = 10**8
+Max_transfer = 10 ** 5
+Max_transfer_token = 10 ** 5
 
 
 def init_config():
@@ -218,7 +218,7 @@ def backtracking():
         analyze(new_block)
         del new_block
         del tmp
-        back_number -= 2
+        back_number -= 1
         tmp = api.get_block(back_number)
         new_block = Block(tmp)
         last_block_time = new_block.get_timestamp()
@@ -240,19 +240,14 @@ def work_begin():
 
     # 循环获取块信息，并解析
     while True:
-        last_block += 1
         # 如果是块没更新，就再跳过，总之不能漏
-        new_block = api.get_block(last_block)
+        new_block = api.get_block(last_block + 1)
         if new_block == {}:
-            last_block -= 1
             continue
-        new_block = Block(api.get_block(last_block))
-        if last_block == new_block.get_number():
-            continue
-        else:
-            last_block = new_block.get_number()
+        new_block = Block(new_block)
         analyze(new_block)
         print('{}号块已解析'.format(str(last_block)))
+        last_block += 1
 
 
 # 初始化一个TOP_app字典，key是address, vaule是app的信息
@@ -271,7 +266,8 @@ def query_data():
             '''
             1.query big transfer
             2.query big transfer of token
-            3.query top app information     
+            3.query top app information
+            4.query big transfer of token(no to_address, in most case, trade in Exchange has no to_address)
             '''
         )
         if chose == '1':
@@ -283,7 +279,7 @@ def query_data():
             print(tb)
 
         elif chose == '2':
-            tmp = query_big_token_transfer(mydb)
+            tmp = query_big_token_transfer(mydb, 1)
             tb = pt.PrettyTable()
             tb.field_names = ['txID', 'asset_name', 'owner_address', 'to_address', 'amount', 'others']
             for i in tmp:
@@ -295,6 +291,13 @@ def query_data():
             tb = pt.PrettyTable()
             tb.field_names = ['address', 'all_transaction_count', 'day_transaction', 'balance', 'day_users',
                               'day_transfer']
+            for i in tmp:
+                tb.add_row(i)
+            print(tb)
+        elif chose == '4':
+            tmp = query_big_token_transfer(mydb, 0)
+            tb = pt.PrettyTable()
+            tb.field_names = ['txID', 'asset_name', 'owner_address', 'amount', 'others']
             for i in tmp:
                 tb.add_row(i)
             print(tb)
@@ -327,6 +330,9 @@ def main():
             3.set top app(restart begin work to activate it)
             4.clear block data in database
             5.clear transactions data in database
+            6.clear all tables
+            7.clear big transfer
+            8.clear big token transfer
             '''
         )
         if chose == '1':
@@ -337,8 +343,15 @@ def main():
             set_app()
         elif chose == '4':
             clear_block(mydb)
-        elif chose =='5':
+        elif chose == '5':
             clear_trans(mydb)
+        elif chose == '6':
+            clear_top_DAPP(mydb)
+        elif chose == '7':
+            clear_top_big_transfer(mydb)
+        elif chose == '8':
+            clear_top_big_token_transfer(mydb)
+
             pass
 
 

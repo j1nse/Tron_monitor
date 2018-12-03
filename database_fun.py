@@ -37,6 +37,7 @@ VALUES ('{}','{}','{}','{}') \
     db.commit()
     cursor.close()
 
+
 """
 def insert_raw_data(db, transaction):
     cursor = db.cursor()
@@ -54,6 +55,7 @@ VALUES ({},{},{},{}) \
     db.commit()
     cursor.close()
 """
+
 
 def insert_top_dapp(db, top):
     cursor = db.cursor()
@@ -82,7 +84,7 @@ INSERT INTO big_transfer \
 VALUES ('{}','{}','{}',{}) \
 '''.format(
         dumps(transaction.get_txID()).replace('\"', '\\"'),
-         dumps(transaction.get_owner()).replace('\"', '\\"'),
+        dumps(transaction.get_owner()).replace('\"', '\\"'),
         dumps(transaction.get_to_address()).replace('\"', '\\"'),
         transaction.get_amount()
     )
@@ -100,13 +102,13 @@ SELECT number,block_header \
     cursor.execute(word)
     tmp = cursor.fetchall()
     all_data = []
-    if not tmp:
+    if tmp:
         for i in tmp:
             one_row = []
             for j in i:
                 if type(j) == str:
                     one_row.append(loads(j))
-                else :
+                else:
                     one_row.append(j)
             all_data.append(one_row)
     cursor.close()
@@ -141,7 +143,7 @@ def query_big_transfer(db):
     cursor.execute(word)
     tmp = cursor.fetchall()
     all_data = []
-    if not tmp:
+    if tmp:
         for i in tmp:
             one_row = []
             for j in i:
@@ -154,16 +156,22 @@ def query_big_transfer(db):
     return all_data
 
 
-def query_big_token_transfer(db):
+def query_big_token_transfer(db, chose):
     cursor = db.cursor()
-    word = '''\
-    SELECT txID,asset_name,owner_address,to_address,amount,others \
-    FROM big_token_transfer ORDER BY amount DESC \
-    '''
+    if chose == 1:
+        word = '''\
+SELECT txID,asset_name,owner_address,to_address,amount,others \
+FROM big_token_transfer ORDER BY amount DESC \
+ '''
+    elif chose == 0:
+        word = '''\
+SELECT txID,asset_name,owner_address,amount,others \
+ FROM big_token_transfer ORDER BY amount DESC \
+'''
     cursor.execute(word)
     tmp = cursor.fetchall()
     all_data = []
-    if not tmp:
+    if tmp:
         for i in tmp:
             one_row = []
             for j in i:
@@ -185,7 +193,7 @@ def query_top_app(db):
     cursor.execute(word)
     tmp = cursor.fetchall()
     all_data = []
-    if not tmp:
+    if tmp:
         for i in tmp:
             one_row = []
             for j in i:
@@ -219,11 +227,42 @@ def clear_block(db):
     db.commit()
     cursor.close()
 
+
 def clear_trans(db):
     cursor = db.cursor()
     word = '''\
             TRUNCATE TABLE `transactions` \
             '''
+    cursor.execute(word)
+    db.commit()
+    cursor.close()
+
+
+def clear_top_DAPP(db):
+    cursor = db.cursor()
+    word = '''\
+TRUNCATE TABLE `top_DAPP`; \
+'''
+    cursor.execute(word)
+    db.commit()
+    cursor.close()
+
+
+def clear_top_big_transfer(db):
+    cursor = db.cursor()
+    word = '''\
+TRUNCATE TABLE `big_transfer`; \
+'''
+    cursor.execute(word)
+    db.commit()
+    cursor.close()
+
+
+def clear_top_big_token_transfer(db):
+    cursor = db.cursor()
+    word = '''\
+TRUNCATE TABLE `big_token_transfer`; \
+'''
     cursor.execute(word)
     db.commit()
     cursor.close()

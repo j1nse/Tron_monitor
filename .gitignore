@@ -4,7 +4,7 @@ temporary_file/
 .idea/
 *.py[cod]
 *$py.class
-
+setting.conf
 # C extensions
 *.so
 
