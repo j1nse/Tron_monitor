@@ -69,7 +69,7 @@ class Transaction:
         return self.ret[0]['contractRet']
 
     def get_timestamp(self):
-        return self.raw_data['timestamp']
+        return self.raw_data['timestamp']/1000
 
     def get_asset_name(self):
         return self.txdata['asset_name'] if 'asset_name' in self.txdata else self.txdata['token_id']
@@ -156,7 +156,7 @@ class Block:
         return self.block_header['raw_data']['version']
 
     def get_timestamp(self):
-        return self.block_header['raw_data']['timestamp']
+        return self.block_header['raw_data']['timestamp']/1000
 
     def get_witness_signature(self):
         return self.block_header['witness_signature']

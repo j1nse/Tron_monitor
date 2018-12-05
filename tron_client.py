@@ -156,7 +156,6 @@ def analyze(new_block):
     global api, mydb, top_list
     trans = new_block.get_transactions()
 
-
     # 针对块里的每一个交易，都实例化一个类，并进行分析
     for txid, tx in trans.items():
         tx = Transaction(tx)
@@ -196,7 +195,7 @@ def analyze(new_block):
             insert_big_token_transfer(mydb, tx)
 
         # transfer trx
-        elif txtype == 'TransferContract'and tx.get_amount() >= Max_transfer_token:
+        elif txtype == 'TransferContract' and tx.get_amount() >= Max_transfer_token:
             insert_transaction(mydb, tx)
             insert_big_transfer(mydb, tx)
 
@@ -215,36 +214,30 @@ def analyze(new_block):
 
 
 def backtracking():
-    global api
+    global api, mydb
     # 获取今天0点时间(格林威治天文时间)
-    first_block = query_first_block(mydb)
-    if first_block != {}:
-        first_block = Block(first_block)
-        first_block = first_block.get_number()
+    last_block_tmp = query_last_block(mydb)
+    if last_block_tmp != {}:
+        last_block_tmp = Block(last_block_tmp)
+        yesterday = last_block_tmp.get_timestamp() - 3600 * 24
+        # last_block = last_block_tmp.get_number()
     else:
-        first_block = Block(api.get_current_block())
-        first_block = first_block.get_number()
+        last_block_tmp = Block(api.get_current_block())
+        yesterday = last_block_tmp.get_timestamp() - 3600 * 24
 
-    yesterday = time.time()- 3600 * 24
+    first_block = Block(query_first_block(mydb)).get_number()
 
-
-    # 初始化回溯的参数 4646372
-
-    tmp = api.get_block(first_block - 1)
-    new_block = Block(tmp)
-    last_block_time = new_block.get_timestamp()
+    new_block = Block(api.get_block(first_block - 1))
+    new_first_block_time = new_block.get_timestamp()
     back_number = new_block.get_number()
 
     # 4646372块出现玄学bug
     # 开始回溯今天错过的块
-    while last_block_time > yesterday:
+    while new_first_block_time > yesterday:
         analyze(new_block)
-        del new_block
-        del tmp
         back_number -= 1
-        tmp = api.get_block(back_number)
-        new_block = Block(tmp)
-        last_block_time = new_block.get_timestamp()
+        new_block = Block(api.get_block(back_number))
+        new_first_block_time = new_block.get_timestamp()
         print('{}块已回溯'.format(str(back_number + 1)))
     print('回溯完毕')
 
@@ -256,17 +249,14 @@ def work_begin():
         last_block = Block(query_last_block(mydb))
         first_block = Block(query_first_block(mydb))
 
-        last_block = last_block.get_number()
+        last_block = last_block.get_timestamp()
         first_block = first_block.get_timestamp()
 
-        today_zero_clock = time.time()
-        today_zero_clock = today_zero_clock - today_zero_clock % (3600 * 24)
-        # +5是为了防止奇怪bug
-        if first_block > today_zero_clock+5:
+        if first_block + 3600 * 24 > last_block:
             backtracking()
     else:
         backtracking()
-
+    return True
 
     # 获取block_number
     last_block = Block(query_last_block(mydb))

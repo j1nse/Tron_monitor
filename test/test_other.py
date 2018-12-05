@@ -1,5 +1,7 @@
 import time,json
 stamp = time.time()
+print(stamp)
+print(1543651903879)
 stamp-stamp%(3600*24)
 print(stamp-stamp%(3600*24))
 print(time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(stamp-stamp%(3600*24))))
