@@ -21,7 +21,7 @@ contract信息表
 '''
 
 # Global variable
-last_block = 0
+
 mydb = 0
 cursor = 0
 tron = 0
@@ -166,17 +166,11 @@ def analyze(new_block):
             i = 0
             # addresses,name,all_transaction_count,day_transaction,balance,day_users,day_transfer
             # 对应0 1 2 3 4 5 6..
-            # debug = tx.get_contract_address()
             if txtype == 'TriggerSmartContract' and tx.get_contract_address().upper() in an_app['addresses']:
-                # print('有{}交易'.format(top_list[i]['name']))
                 top_list[i]['all_transaction_count'] += 1
                 top_list[i]['day_transaction'] += 1
-                # top_list[tx.get_contract_address()]['balance'] = api.get_balance(tx.get_contract_address())
                 update_top_app(
-                    # addresses,name,all_transaction_count,day_transaction,balance,day_users,day_transfer
-                    # all_transaction_count = {},day_transaction={},balance={} WHERE name = '{}
                     mydb,
-
                     # 这里以后再改
                     top_list[i]['name'],
                     top_list[i]['all_transaction_count'],
@@ -242,8 +236,40 @@ def backtracking():
     print('回溯完毕')
 
 
+def cut_head(head_number):
+    # 和analyze类似 是减去过期的数据，有时间再优化
+    global mydb, api, top_list
+    trans = Block(api.get_block(head_number)).get_transactions()
+
+    # 针对块里的每一个交易，都实例化一个类，并进行分析
+    for txid, tx in trans.items():
+        tx = Transaction(tx)
+        txtype = tx.get_type()
+
+        # 判断交易是否涉及TOP_APP,涉及则更新数据
+        for an_app in top_list:
+            i = 0
+            # addresses,name,all_transaction_count,day_transaction,balance,day_users,day_transfer
+            # 对应0 1 2 3 4 5 6..
+            if txtype == 'TriggerSmartContract' and tx.get_contract_address().upper() in an_app['addresses']:
+                top_list[i]['day_transaction'] -= 1
+                update_top_app(
+                    mydb,
+                    # 这里以后再改
+                    top_list[i]['name'],
+                    top_list[i]['all_transaction_count'],
+                    top_list[i]['day_transaction'],
+                    top_list[i]['balance'],
+                    0,
+                    0
+                )
+                i += 1
+            else:
+                i += 1
+
+
 def work_begin():
-    global api, mydb, top_list, last_block
+    global api, mydb, top_list
     init_top_list()
     if query_last_block(mydb) != {}:
         last_block = Block(query_last_block(mydb))
@@ -261,17 +287,20 @@ def work_begin():
     # 获取block_number
     last_block = Block(query_last_block(mydb))
     last_block = last_block.get_number()
-
+    head_number = Block(query_first_block(mydb)).get_number()
     # 循环获取块信息，并解析
     while True:
         # 如果是块没更新，就再跳过，总之不能漏
         new_block = api.get_block(last_block + 1)
         if new_block == {}:
             continue
+
         new_block = Block(new_block)
+        head_cut(head_number)
         analyze(new_block)
         print('{}号块已解析'.format(str(last_block)))
         last_block += 1
+        head_number += 1
 
 
 # 初始化一个TOP_app字典，key是address, vaule是app的信息
@@ -342,6 +371,7 @@ def query_data():
             tb.field_names = ['txID', 'asset_name', 'owner_address', 'amount', 'others']
             for i in tmp:
                 i[2] = hex_to_base58(i[2]).decode()
+                i[1] = bytes.fromhex(i[1]).decode() if i[1] != "5f" else "trade TRX for another token"
                 tb.add_row(i)
             print(tb)
         else:
