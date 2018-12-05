@@ -25,7 +25,7 @@ you'd better use `json.dump`to create it
 
 PS: If your database doesn't exist, program will help you to create a new database
 
-PS: the **top app monitor** needs you to set by yourself, you need to type all address of it(hex), and its name
+PS: the **top app monitor** needs you to set by yourself, you need to type all address of it(base58), and its name
 
 ------
 

@@ -388,6 +388,7 @@ def set_app():
         an_address = input('please input the address of app,input 666 to quit\n')
         if an_address == '666':
             break
+        an_address = hex_to_base58(an_address)
         addresses.append(an_address)
     name = input('please input the name of app\n')
     # balance = api.get_balance(address)
