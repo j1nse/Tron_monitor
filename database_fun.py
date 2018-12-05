@@ -14,7 +14,7 @@ VALUES ('{}',{},'{}','{}') \
         dumps(block.get_blockID()).replace('\"', '\\"'),
         block.get_number(),
         dumps(block.get_header()).replace('\"', '\\"'),
-        dumps(block.get_transactions()).replace('\"', '\\"')
+        dumps({}).replace('\"', '\\"')
     )
     cursor.execute(word)
     db.commit()
@@ -61,10 +61,11 @@ def insert_top_dapp(db, top):
     cursor = db.cursor()
     word = '''\
 INSERT INTO top_DAPP \
-( address, all_transaction_count, day_transaction, balance, day_users, day_transfer ) \
-VALUES ('{}',{},{},{},{},{})\
+( addresses,name, all_transaction_count, day_transaction, balance, day_users, day_transfer ) \
+VALUES ('{}','{}',{},{},{},{},{})\
 '''.format(
-        dumps(top.get_address()).replace('\"', '\\"'),
+        dumps(top.get_addresses()).replace('\"', '\\"'),
+        dumps(top.get_name()).replace('\"', '\\"'),
         dumps(top.get_all_transaction_count()),
         dumps(top.get_day_transaction()),
         dumps(top.get_balance()),
@@ -96,7 +97,7 @@ VALUES ('{}','{}','{}',{}) \
 def query_last_block(db):
     cursor = db.cursor()
     word = '''\
-SELECT number,block_header \
+SELECT blockID,number,block_header \
  FROM block ORDER BY number DESC LIMIT 1 \
  '''
     cursor.execute(word)
@@ -111,8 +112,42 @@ SELECT number,block_header \
                 else:
                     one_row.append(j)
             all_data.append(one_row)
+    else:
+        return {}
+    result = {"blockID": all_data[0][0],
+              "block_header": all_data[0][2],
+              'transactions': {}
+              }
     cursor.close()
-    return tmp
+    return result
+
+
+def query_first_block(db):
+    cursor = db.cursor()
+    word = '''\
+SELECT blockID,number, block_header \
+ FROM block ORDER BY number ASC LIMIT 1 \
+ '''
+    cursor.execute(word)
+    tmp = cursor.fetchall()
+    all_data = []
+    if tmp:
+        for i in tmp:
+            one_row = []
+            for j in i:
+                if type(j) == str:
+                    one_row.append(loads(j))
+                else:
+                    one_row.append(j)
+            all_data.append(one_row)
+    else:
+        return {}
+    result = {"blockID": all_data[0][0],
+              "block_header": all_data[0][2],
+              'transactions': {}
+              }
+    cursor.close()
+    return result
 
 
 def insert_big_token_transfer(db, transaction):
@@ -187,7 +222,7 @@ SELECT txID,asset_name,owner_address,amount,others \
 def query_top_app(db):
     cursor = db.cursor()
     word = '''\
-    SELECT address,all_transaction_count,day_transaction,balance,day_users,day_transfer \
+    SELECT addresses,name,all_transaction_count,day_transaction,balance,day_users,day_transfer \
     FROM top_DAPP ORDER BY all_transaction_count DESC \
     '''
     cursor.execute(word)
@@ -206,12 +241,12 @@ def query_top_app(db):
     return all_data
 
 
-def update_top_app(db, address, all_transaction_count, day_transaction, balance, day_users, day_transfer):
+def update_top_app(db, name, all_transaction_count, day_transaction, balance, day_users, day_transfer):
     cursor = db.cursor()
     word = '''\
-    UPDATE top_DAPP SET all_transaction_count = {},day_transaction={},balance={} WHERE address = '{}' \
+    UPDATE top_DAPP SET all_transaction_count = {},day_transaction={},balance={} WHERE name = '{}' \
     '''.format(
-        all_transaction_count, day_transaction, balance, address
+        all_transaction_count, day_transaction, balance, "\"" + name + "\""
     )
     cursor.execute(word)
     db.commit()

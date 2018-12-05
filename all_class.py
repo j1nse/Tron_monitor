@@ -54,7 +54,7 @@ class Transaction:
         return self.txdata['amount'] if 'amount' in self.txdata else self.txdata['quant']
 
     def get_to_address(self):
-        return self.txdata['to_address'] if 'to_address'in self.txdata else '000000000000000000000000000000000000000000'
+        return self.txdata['to_address'] if 'to_address' in self.txdata else ''
 
     def get_contract_address(self):
         return self.txdata['contract_address']
@@ -76,23 +76,31 @@ class Transaction:
 
 
 class Top:
-    address = ''
+    addresses = []
     all_transaction_count = 0
     day_transaction = 0
     balance = 0
     day_users = 0
     day_transfer = 0
+    name = ''
+    # insert function:
+    # address,name, all_transaction_count, day_transaction, balance, day_users, day_transfer
 
-    def __init__(self, address, all_transaction_count=0, day_transaction=0, balance=0, day_users=0, day_transfer=0):
-        self.address = address
+    def __init__(self, addresses, name, all_transaction_count=0, day_transaction=0, balance=0, day_users=0,
+                 day_transfer=0):
+        self.addresses = addresses
+        self.name = name
         self.all_transaction_count = all_transaction_count
         self.day_transaction = day_transaction
         self.balance = balance
         self.day_users = day_users
         self.day_transfer = day_transfer
 
-    def get_address(self):
-        return self.address
+    def get_addresses(self):
+        return self.addresses
+
+    def get_name(self):
+        return self.name
 
     def get_all_transaction_count(self):
         return self.all_transaction_count
@@ -119,8 +127,9 @@ class Block:
         self.blockID = ori['blockID']
         self.block_header = ori['block_header']
         self.transactions.clear()
-        for i in ori['transactions']:
-            self.transactions[i['txID']] = i
+        if 'transactions' in ori:
+            for i in ori['transactions']:
+                self.transactions[i['txID']] = i
 
     def get_transactions(self):
         return self.transactions

@@ -32,7 +32,8 @@ CREATE TABLE `raw_data`( \
 
 _tables['top_DAPP'] = ''' \
 CREATE TABLE `top_DAPP` ( \
-address varchar(50) PRIMARY KEY NOT NULL, \
+addresses varchar(500) NOT NULL, \
+name varchar(30) PRIMARY KEY NOT NULL,
 all_transaction_count  BIGINT NOT NULL, \
 day_transaction BIGINT NOT NULL, \
 balance BIGINT NOT NULL, \
@@ -59,5 +60,15 @@ owner_address varchar(50), \
 to_address varchar(50), \
 amount FLOAT, \
 others varchar(1024) \
+) \
+'''
+
+# 創建時間，bytecode各種信息
+
+_tables['dapp_info'] = ''' \
+CREATE TABLE `dapp_info`( \
+`name` varchar(70) PRIMARY KEY NOT NULL , \
+create_time BIGINT ,\
+bytecode varchar(2048) \
 ) \
 '''

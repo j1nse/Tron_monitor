@@ -1,5 +1,6 @@
 from tronapi import *
 from tronapi import trx
+from tronapi.utils.help import hex_to_base58
 import os
 import prettytable as pt
 import mysql.connector
@@ -14,6 +15,9 @@ from all_class import *
 '''
 1. TRON大額轉帳監控
 2. top DApp DAU/balance/等數據收集
+
+transactions奇异缺失
+contract信息表
 '''
 
 # Global variable
@@ -22,10 +26,10 @@ mydb = 0
 cursor = 0
 tron = 0
 api = 0
-top_list = {}
+top_list = []
 data_json = {}
-Max_transfer = 10 ** 5
-Max_transfer_token = 10 ** 5
+Max_transfer = 10 ** 12
+Max_transfer_token = 10 ** 12
 
 
 def init_config():
@@ -130,9 +134,9 @@ def init():
             'https': 'socks5://127.0.0.1:1080'
         }
     }
-    full_node = HttpProvider(data_json['full_node'], proxies)
-    solidity_node = HttpProvider(data_json['solidity_node'], proxies)
-    event_server = HttpProvider(data_json['event_server'], proxies)
+    full_node = HttpProvider(data_json['full_node'], )
+    solidity_node = HttpProvider(data_json['solidity_node'], )
+    event_server = HttpProvider(data_json['event_server'], )
 
     tron = Tron(full_node=full_node,
                 solidity_node=solidity_node,
@@ -151,7 +155,7 @@ def clear_screen():
 def analyze(new_block):
     global api, mydb, top_list
     trans = new_block.get_transactions()
-    insert_block(mydb, new_block)
+
 
     # 针对块里的每一个交易，都实例化一个类，并进行分析
     for txid, tx in trans.items():
@@ -159,62 +163,81 @@ def analyze(new_block):
         txtype = tx.get_type()
 
         # 判断交易是否涉及TOP_APP,涉及则更新数据
-        if txtype == 'TriggerSmartContract' and tx.get_contract_address() in top_list:
-            top_list[tx.get_contract_address()]['all_transaction_count'] += 1
-            top_list[tx.get_contract_address()]['day_transaction'] += 1
-            top_list[tx.get_contract_address()]['balance'] = api.get_balance(tx.get_contract_address())
-            # 这里或许可以优化一下？不知道一直操作数据库会不会不太好，但是不这样程序意外退出可能造成数据丢失
-            update_top_app(
-                mydb,
-                tx.get_contract_address(),
-                top_list[tx.get_contract_address()]['all_transaction_count'],
-                top_list[tx.get_contract_address()]['day_transaction'],
-                top_list[tx.get_contract_address()]['balance'],
-                # 这里以后再改
-                top_list[tx.get_contract_address()]['day_transaction'],
-                top_list[tx.get_contract_address()]['day_transaction']
-            )
+        for an_app in top_list:
+            i = 0
+            # addresses,name,all_transaction_count,day_transaction,balance,day_users,day_transfer
+            # 对应0 1 2 3 4 5 6..
+            # debug = tx.get_contract_address()
+            if txtype == 'TriggerSmartContract' and tx.get_contract_address().upper() in an_app['addresses']:
+                # print('有{}交易'.format(top_list[i]['name']))
+                top_list[i]['all_transaction_count'] += 1
+                top_list[i]['day_transaction'] += 1
+                # top_list[tx.get_contract_address()]['balance'] = api.get_balance(tx.get_contract_address())
+                update_top_app(
+                    # addresses,name,all_transaction_count,day_transaction,balance,day_users,day_transfer
+                    # all_transaction_count = {},day_transaction={},balance={} WHERE name = '{}
+                    mydb,
 
+                    # 这里以后再改
+                    top_list[i]['name'],
+                    top_list[i]['all_transaction_count'],
+                    top_list[i]['day_transaction'],
+                    top_list[i]['balance'],
+                    0,
+                    0
+                )
+                i += 1
+            else:
+                i += 1
+        # 4667928块已回溯
         # transfer token
-        if txtype == 'TransferAssetContract':
+        if txtype == 'TransferAssetContract' and tx.get_amount() >= Max_transfer:
             insert_transaction(mydb, tx)
-            if tx.get_amount() >= Max_transfer:
-                insert_big_token_transfer(mydb, tx)
+            insert_big_token_transfer(mydb, tx)
 
         # transfer trx
-        elif txtype == 'TransferContract':
+        elif txtype == 'TransferContract'and tx.get_amount() >= Max_transfer_token:
             insert_transaction(mydb, tx)
-            if tx.get_amount() >= Max_transfer_token:
-                insert_big_transfer(mydb, tx)
+            insert_big_transfer(mydb, tx)
 
         # transfer token by Exchange
 
-        elif txtype == 'ExchangeTransactionContract':
+        elif txtype == 'ExchangeTransactionContract' and tx.get_amount() >= Max_transfer_token:
             insert_transaction(mydb, tx)
-            if tx.get_amount() >= Max_transfer_token:
-                insert_big_token_transfer(mydb, tx)
+            insert_big_token_transfer(mydb, tx)
 
         # common type
         elif txtype == 'TriggerSmartContract':
             pass
         else:
             continue
+    insert_block(mydb, new_block)
 
 
 def backtracking():
     global api
     # 获取今天0点时间(格林威治天文时间)
-    today_zero_clock = time.time()
-    today_zero_clock = today_zero_clock - today_zero_clock % (3600 * 24)
+    first_block = query_first_block(mydb)
+    if first_block != {}:
+        first_block = Block(first_block)
+        first_block = first_block.get_number()
+    else:
+        first_block = Block(api.get_current_block())
+        first_block = first_block.get_number()
 
-    # 初始化回溯的参数
-    tmp = api.get_current_block()
+    yesterday = time.time()- 3600 * 24
+
+
+    # 初始化回溯的参数 4646372
+
+    tmp = api.get_block(first_block - 1)
     new_block = Block(tmp)
     last_block_time = new_block.get_timestamp()
     back_number = new_block.get_number()
 
+    # 4646372块出现玄学bug
     # 开始回溯今天错过的块
-    while last_block_time > today_zero_clock:
+    while last_block_time > yesterday:
         analyze(new_block)
         del new_block
         del tmp
@@ -229,14 +252,25 @@ def backtracking():
 def work_begin():
     global api, mydb, top_list, last_block
     init_top_list()
-    last_block = query_last_block(mydb)
+    if query_last_block(mydb) != {}:
+        last_block = Block(query_last_block(mydb))
+        first_block = Block(query_first_block(mydb))
 
-    # 检查是否block库空空如也
-    if last_block == []:
-        backtracking()
+        last_block = last_block.get_number()
+        first_block = first_block.get_timestamp()
+
+        today_zero_clock = time.time()
+        today_zero_clock = today_zero_clock - today_zero_clock % (3600 * 24)
+        # +5是为了防止奇怪bug
+        if first_block > today_zero_clock+5:
+            backtracking()
     else:
-        # 获取block_number
-        last_block = last_block[0][0]
+        backtracking()
+
+
+    # 获取block_number
+    last_block = Block(query_last_block(mydb))
+    last_block = last_block.get_number()
 
     # 循环获取块信息，并解析
     while True:
@@ -254,7 +288,17 @@ def work_begin():
 def init_top_list():
     global mydb, top_list
     for i in query_top_app(mydb):
-        top_list[i[0]] = i
+        tmp = {
+            'addresses': i[0],
+            'name': i[1],
+            'all_transaction_count': i[2],
+            'day_transaction': i[3],
+            'balance': i[4],
+            'day_users': i[5],
+            'day_transfer': i[6]
+        }
+        # addresses, name, all_transaction_count, day_transaction, balance, day_users, day_transfer
+        top_list.append(tmp)
 
 
 # 查询数据库里的数据
@@ -275,6 +319,8 @@ def query_data():
             tb = pt.PrettyTable()
             tb.field_names = ['txID', 'owner_address', 'to_address', 'amount', 'others']
             for i in tmp:
+                i[1] = hex_to_base58(i[1]).decode()
+                i[2] = hex_to_base58(i[2]).decode()
                 tb.add_row(i)
             print(tb)
 
@@ -283,15 +329,21 @@ def query_data():
             tb = pt.PrettyTable()
             tb.field_names = ['txID', 'asset_name', 'owner_address', 'to_address', 'amount', 'others']
             for i in tmp:
+                i[1] = bytes.fromhex(i[1]).decode() if i[1] != "5f" else "trade TRX for another token"
+                i[2] = hex_to_base58(i[2]).decode()
+                i[3] = hex_to_base58(i[3]).decode()
                 tb.add_row(i)
             print(tb)
 
         elif chose == '3':
             tmp = query_top_app(mydb)
             tb = pt.PrettyTable()
-            tb.field_names = ['address', 'all_transaction_count', 'day_transaction', 'balance', 'day_users',
+            tb.field_names = ['addresses', 'name', 'all_transaction_count', 'day_transaction', 'balance', 'day_users',
                               'day_transfer']
             for i in tmp:
+                # i[0] = hex_to_base58(i[0]).decode()
+                i[0] = 'too long'
+                # i[1] = hex_to_base58(i[1]).decode()
                 tb.add_row(i)
             print(tb)
         elif chose == '4':
@@ -299,6 +351,7 @@ def query_data():
             tb = pt.PrettyTable()
             tb.field_names = ['txID', 'asset_name', 'owner_address', 'amount', 'others']
             for i in tmp:
+                i[2] = hex_to_base58(i[2]).decode()
                 tb.add_row(i)
             print(tb)
         else:
@@ -309,9 +362,16 @@ def query_data():
 # 初始化一个新的TOP_app
 def set_app():
     global mydb, api
-    address = input('please input the address of app\n')
-    balance = api.get_balance(address)
-    top = Top(address, 0, 0, balance)
+
+    addresses = []
+    while True:
+        an_address = input('please input the address of app,input 666 to quit\n')
+        if an_address == '666':
+            break
+        addresses.append(an_address)
+    name = input('please input the name of app\n')
+    # balance = api.get_balance(address)
+    top = Top(addresses, name, 0, 0, 0)
     insert_top_dapp(mydb, top)
 
 
@@ -330,7 +390,7 @@ def main():
             3.set top app(restart begin work to activate it)
             4.clear block data in database
             5.clear transactions data in database
-            6.clear all tables
+            6.clear top_DAPP
             7.clear big transfer
             8.clear big token transfer
             '''
@@ -351,8 +411,6 @@ def main():
             clear_top_big_transfer(mydb)
         elif chose == '8':
             clear_top_big_token_transfer(mydb)
-
-            pass
 
 
 if __name__ == '__main__':
