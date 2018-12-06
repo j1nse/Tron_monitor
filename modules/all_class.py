@@ -63,7 +63,7 @@ class Transaction:
         if 'call_value' in self.txdata:
             return self.txdata['call_value']
         else:
-            return ''
+            return 0
 
     def get_status(self):
         return self.ret[0]['contractRet']

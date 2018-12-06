@@ -1,16 +1,15 @@
-from tronapi import *
-from tronapi import trx
+from tronapi import HttpProvider, Tron, trx
 from tronapi.utils.help import hex_to_base58
 import os
 import prettytable as pt
 import mysql.connector
-import time
+# import time
 import json
 from mysql.connector import errorcode
-import tables
+import modules.tables as tables
 import sys
-from database_fun import *
-from all_class import *
+from modules.database_fun import *
+from modules.all_class import *
 
 '''
 1. TRON大額轉帳監控
@@ -169,6 +168,8 @@ def analyze(new_block):
             if txtype == 'TriggerSmartContract' and tx.get_contract_address().upper() in an_app['addresses']:
                 top_list[i]['all_transaction_count'] += 1
                 top_list[i]['day_transaction'] += 1
+                top_list[i]['day_transfer'] += tx.get_call_value()
+                # print(top_list[i]['day_transfer'])
                 update_top_app(
                     mydb,
                     # 这里以后再改
@@ -177,7 +178,7 @@ def analyze(new_block):
                     top_list[i]['day_transaction'],
                     top_list[i]['balance'],
                     0,
-                    0
+                    top_list[i]['day_transfer']
                 )
                 i += 1
             else:
@@ -239,7 +240,12 @@ def backtracking():
 def cut_head(head_number):
     # 和analyze类似 是减去过期的数据，有时间再优化
     global mydb, api, top_list
+    time_diff = Block(query_last_block(mydb)).get_timestamp() - Block(query_first_block(mydb)).get_timestamp()
+    if time_diff <= 86400:
+        return False
     trans = Block(api.get_block(head_number)).get_transactions()
+
+    #
 
     # 针对块里的每一个交易，都实例化一个类，并进行分析
     for txid, tx in trans.items():
@@ -253,6 +259,7 @@ def cut_head(head_number):
             # 对应0 1 2 3 4 5 6..
             if txtype == 'TriggerSmartContract' and tx.get_contract_address().upper() in an_app['addresses']:
                 top_list[i]['day_transaction'] -= 1
+                top_list[i]['day_transfer'] -= tx.get_call_value()
                 update_top_app(
                     mydb,
                     # 这里以后再改
@@ -261,11 +268,14 @@ def cut_head(head_number):
                     top_list[i]['day_transaction'],
                     top_list[i]['balance'],
                     0,
-                    0
+                    top_list[i]['day_transfer']
                 )
                 i += 1
             else:
                 i += 1
+    print('             {}号块已减去'.format(head_number))
+    delete_block(mydb, head_number)
+    return True
 
 
 def work_begin():
@@ -282,7 +292,6 @@ def work_begin():
             backtracking()
     else:
         backtracking()
-    return True
 
     # 获取block_number
     last_block = Block(query_last_block(mydb))
@@ -294,13 +303,16 @@ def work_begin():
         new_block = api.get_block(last_block + 1)
         if new_block == {}:
             continue
+        if cut_head(head_number):
+            head_number += 1
+            continue
 
         new_block = Block(new_block)
-        head_cut(head_number)
+
         analyze(new_block)
         print('{}号块已解析'.format(str(last_block)))
         last_block += 1
-        head_number += 1
+
 
 
 # 初始化一个TOP_app字典，key是address, vaule是app的信息
@@ -329,7 +341,7 @@ def query_data():
             '''
             1.query big transfer
             2.query big transfer of token
-            3.query top app information
+            3.query top app information (need to get balance, just wait a while)
             4.query big transfer of token(no to_address, in most case, trade in Exchange has no to_address)
             '''
         )
@@ -356,6 +368,11 @@ def query_data():
 
         elif chose == '3':
             tmp = query_top_app(mydb)
+            # 获取balance
+            for one_app in tmp:
+                addr_list = one_app[0]
+                for addr_single in addr_list:
+                    one_app[4] += api.get_balance(addr_single)
             tb = pt.PrettyTable()
             tb.field_names = ['addresses', 'name', 'all_transaction_count', 'day_transaction', 'balance', 'day_users',
                               'day_transfer']

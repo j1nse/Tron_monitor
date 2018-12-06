@@ -244,9 +244,9 @@ def query_top_app(db):
 def update_top_app(db, name, all_transaction_count, day_transaction, balance, day_users, day_transfer):
     cursor = db.cursor()
     word = '''\
-    UPDATE top_DAPP SET all_transaction_count = {},day_transaction={},balance={} WHERE name = '{}' \
+    UPDATE top_DAPP SET all_transaction_count = {},day_transaction={},balance={},day_users={},day_transfer={} WHERE name = '{}' \
     '''.format(
-        all_transaction_count, day_transaction, balance, "\"" + name + "\""
+        all_transaction_count, day_transaction, balance, day_users, day_transfer, "\"" + name + "\""
     )
     cursor.execute(word)
     db.commit()
@@ -298,6 +298,15 @@ def clear_top_big_token_transfer(db):
     word = '''\
 TRUNCATE TABLE `big_token_transfer`; \
 '''
+    cursor.execute(word)
+    db.commit()
+    cursor.close()
+
+def delete_block(db,number):
+    cursor = db.cursor()
+    word = '''\
+DELETE FROM `block` where number = {}  \
+'''.format(number)
     cursor.execute(word)
     db.commit()
     cursor.close()
