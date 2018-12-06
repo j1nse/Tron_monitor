@@ -42,13 +42,14 @@ PS: the **top app monitor** needs you to set by yourself, you need to type all a
 ### target
 
 - [x] TRON large transfer monitoring
-- [ ] Top DApp DAU/balance/etc. Data collection(complete half)
+- [x] Top DApp balance/etc. Data collection(complete half)
+- [ ]  DAU
 
 -----
 
 ### time
 
-ends on 12.10(but I have to prepare for the examination...)
+ends on 12.10(but I have to prepare for the final  examination...)
 
 ----
 
@@ -58,7 +59,11 @@ ends on 12.10(but I have to prepare for the examination...)
 
 ### mind
 
-debug!!!!!!!!!!!!!!!!!!!!!
+final examination !!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+debug and optimize !!!
+
+
 
 
 
