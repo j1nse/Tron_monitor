@@ -1,7 +1,7 @@
 # Tron_monitor
 ## a project to monitor the Tron
 
-基本功都能用了，不过还有很大的优化空间
+基本功能都能用了，不过还有很大的优化空间
 
 #### requirement
 
