@@ -17,11 +17,10 @@ from base58 import b58decode_check
 2. top DApp DAU/balance/等數據收集
 
 transactions奇异缺失
-contract信息表
+
 '''
 
 # Global variable
-
 mydb = 0
 cursor = 0
 tron = 0
@@ -32,8 +31,8 @@ Max_transfer = 10 ** 12  # 默认值
 Max_transfer_token = 10 ** 12
 
 
+# 没有配置文件,初始化一个
 def init_config():
-    # 没有配置文件,初始化一个
     _full_node = input('please input the full_node url, if you want to init config yourself,please input 666\n')
     if _full_node == '666':
         sys.exit('goodbye!')
@@ -56,12 +55,13 @@ def init_config():
         'host': _database_host,
         'password': _database_password,
         'Max_transfer': _Max_transfer,
-        '_Max_transfer_token': _Max_transfer_token
+        'Max_transfer_token': _Max_transfer_token
     }
     with open('setting.conf', 'w+') as f:
         json.dump(data, f)
 
 
+# 建库，建表函数
 def init_create_db():
     global data_json, mydb, cursor
 
@@ -98,16 +98,18 @@ def init_create_db():
             print("OK")
 
 
+# 初始化函数，用于读取配置文件，连接数据库，连接API
 def init():
     global data_json, tron, api, mydb, Max_transfer, Max_transfer_token
 
-    # 读取数据库配置到 data_json
+    # 读取数据库配置到 data_json, 若不存在配置文件则建一个
     if not os.path.exists('setting.conf'):
         init_config()
     with open('setting.conf', 'r') as f:
         data_json = json.load(f)
+        # 检查需要的参数全了没
         check = ['user', 'password', 'host', 'database', 'full_node', 'solidity_node', 'event_server', 'Max_transfer',
-                 'Max_transfer_token']
+                 'Max_transfer_token', 'proxy']
         for i in check:
             if i not in data_json:
                 return False
@@ -126,22 +128,27 @@ def init():
             return False
         elif err.errno == errorcode.ER_BAD_DB_ERROR:
             print("Database does not exist,just create a new database, please restart program")
+            # 如果数据库不存在，就建
             init_create_db()
             return False
         else:
             print(err)
             return False
 
-    # 连接API(http)
-    proxies = {
-        'proxies': {
-            'http': 'socks5://127.0.0.1:1080',
-            'https': 'socks5://127.0.0.1:1080'
+    # 判断代理
+    if data_json['proxy'].strip() != '':
+        proxy = {
+            'proxies': {
+                'http': data_json['proxy'],
+                'https': data_json['proxy']
+            }
         }
-    }
-    full_node = HttpProvider(data_json['full_node'], )
-    solidity_node = HttpProvider(data_json['solidity_node'], )
-    event_server = HttpProvider(data_json['event_server'], )
+    else:
+        proxy = {}
+    # 连接API(http)
+    full_node = HttpProvider(data_json['full_node'], proxy)
+    solidity_node = HttpProvider(data_json['solidity_node'], proxy)
+    event_server = HttpProvider(data_json['event_server'], proxy)
 
     tron = Tron(full_node=full_node,
                 solidity_node=solidity_node,
@@ -153,20 +160,22 @@ def init():
     return True
 
 
-# 清屏(等学会写UI后，这个就没用了,不过命令行还是挺hack style的:)
+# 清屏(命令行还是挺hack style的:)
 def clear_screen():
     os.system('cls')
 
 
+# 很明显的函数
 def base58_to_hex(p):
     return b58decode_check(p).hex()
 
 
+# 用来解析得到的块的信息的函数
 def analyze(new_block):
     global api, mydb, top_list
     trans = new_block.get_transactions()
 
-    # 针对块里的每一个交易，都实例化一个类，并进行分析
+    # 针对块里的每一个交易，都实例化一个交易类，并进行分析
     for txid, tx in trans.items():
         tx = Transaction(tx)
         txtype = tx.get_type()
@@ -174,19 +183,18 @@ def analyze(new_block):
         # 判断交易是否涉及TOP_APP,涉及则更新数据
         for an_app in top_list:
             i = 0
-            # addresses,name,all_transaction_count,day_transaction,balance,day_users,day_transfer
-            # 对应0 1 2 3 4 5 6..
+            # an_app 是字典，key为 addresses,name,all_transaction_count,day_transaction,balance,day_transfer,users
             if txtype == 'TriggerSmartContract' and tx.get_contract_address() in an_app['addresses']:
+                # 如果是新用户，就加入
                 if tx.get_owner_address() not in an_app['users']:
                     top_list[i]['users'].append(tx.get_owner_address())
                 top_list[i]['all_transaction_count'] += 1
                 top_list[i]['day_transaction'] += 1
                 top_list[i]['day_transfer'] += tx.get_call_value()
 
-                # print(top_list[i]['day_transfer'])
+                # update的参数 name, all_transaction_count, day_transaction, balance, day_transfer, users
                 update_top_app(
                     mydb,
-                    # 这里以后再改
                     top_list[i]['name'],
                     top_list[i]['all_transaction_count'],
                     top_list[i]['day_transaction'],
@@ -197,7 +205,7 @@ def analyze(new_block):
                 i += 1
             else:
                 i += 1
-        # 4667928块已回溯
+
         # transfer token
         if txtype == 'TransferAssetContract' and tx.get_amount() >= Max_transfer:
             insert_transaction(mydb, tx)
@@ -209,23 +217,25 @@ def analyze(new_block):
             insert_big_transfer(mydb, tx)
 
         # transfer token by Exchange
-
         elif txtype == 'ExchangeTransactionContract' and tx.get_amount() >= Max_transfer_token:
             insert_transaction(mydb, tx)
             insert_big_token_transfer(mydb, tx)
 
         # common type
-        elif txtype == 'TriggerSmartContract':
-            pass
         else:
             continue
+        # 还有很多类型，慢慢加...
+
+    # 插入块到数据库，表示分析完了
     insert_block(mydb, new_block)
 
 
+# 往前回溯块
 def backtracking():
     global api, mydb
-    # 获取今天0点时间(格林威治天文时间)
     last_block = query_last_block(mydb)
+
+    # 如果是空的，就从现在开始回溯,否则从最前面的块开始回溯
     if last_block != {}:
         last_block = Block(last_block)
         first_block = Block(query_first_block(mydb)).get_number()
@@ -234,14 +244,15 @@ def backtracking():
         last_block = Block(api.get_current_block())
         first_block = last_block.get_number()
 
+    # 要回溯到的时间点
     yesterday = last_block.get_timestamp() - 3600 * 24
 
     new_block = Block(api.get_block(first_block - 2))
-    # -2 是因为有可能有1块已经分析完，但没有插入数据库(意外退出造成的)
+    # -2 是因为有可能有1块已经分析完，但没有插入数据库(意外退出造成的),防止插入相同数据导致错误
     new_first_block_time = new_block.get_timestamp()
     back_number = new_block.get_number()
 
-    # 4646372块出现玄学bug
+    # 4646372块会出现玄学bug
     # 开始回溯今天错过的块
     while new_first_block_time > yesterday:
         analyze(new_block)
@@ -252,15 +263,15 @@ def backtracking():
     print('回溯完毕')
 
 
+# 和analyze类似 是减去过期的数据
 def cut_head(head_number):
-    # 和analyze类似 是减去过期的数据，有时间再优化
     global mydb, api, top_list
+
+    # 查看是否有过期的块, 86400 == 24 * 3600
     time_diff = Block(query_last_block(mydb)).get_timestamp() - Block(query_first_block(mydb)).get_timestamp()
     if time_diff <= 86400:
         return False
     trans = Block(api.get_block(head_number)).get_transactions()
-
-    #
 
     # 针对块里的每一个交易，都实例化一个类，并进行分析
     for txid, tx in trans.items():
@@ -269,54 +280,58 @@ def cut_head(head_number):
 
         # 判断交易是否涉及TOP_APP,涉及则更新数据
         for an_app in top_list:
-            i = 0
-            # addresses,name,all_transaction_count,day_transaction,balance,day_users,day_transfer
-            # 对应0 1 2 3 4 5 6..
+            i = 0  # top_list里第i个app
+            # an_app 是字典，key为 addresses,name,all_transaction_count,day_transaction,balance,day_transfer,users
             if txtype == 'TriggerSmartContract' and tx.get_contract_address() in an_app['addresses']:
 
                 top_list[i]['day_transaction'] -= 1
                 top_list[i]['day_transfer'] -= tx.get_call_value()
+                # update的参数 name, all_transaction_count, day_transaction, balance, day_transfer, users
                 update_top_app(
                     mydb,
-                    # 这里以后再改
                     top_list[i]['name'],
                     top_list[i]['all_transaction_count'],
                     top_list[i]['day_transaction'],
                     top_list[i]['balance'],
-                    0,
-                    top_list[i]['day_transfer']
+                    top_list[i]['day_transfer'],
+                    top_list[i]['users']
                 )
                 i += 1
             else:
                 i += 1
     print('             {}号块已减去'.format(head_number))
+    # 从数据库删除这个块
     delete_block(mydb, head_number)
     return True
 
 
+# 清理dapp的users信息
 def clear_dapp_users():
     global mydb
     for i in len(top_list):
         update_top_app(
             mydb,
-            # 这里以后再改
             top_list[i]['name'],
             top_list[i]['all_transaction_count'],
             top_list[i]['day_transaction'],
             top_list[i]['balance'],
             top_list[i]['day_transfer'],
-            []
+            []  # 这里为空，即为清除
         )
 
 
+# 用于回溯未同步块，分析块信息，同步最新块
 def work_begin():
     global api, mydb, top_list
+    # 初始化dapp的信息到全局变量里
     init_top_list()
-    scheduler = BackgroundScheduler()
+
     # 每天凌晨1点清空DAU数据
+    scheduler = BackgroundScheduler()
     scheduler.add_job(clear_dapp_users, 'cron', hour=1)
     scheduler.start()
 
+    # 如果最早的块和最晚的块之间差不到1天，就要回溯；或者库里没有块信息，也要回溯
     if query_last_block(mydb) != {}:
         last_block = Block(query_last_block(mydb))
         first_block = Block(query_first_block(mydb))
@@ -329,23 +344,25 @@ def work_begin():
     else:
         backtracking()
 
-    # 获取block_number
-    last_block = Block(query_last_block(mydb))
-    last_block = last_block.get_number()
+    # 分别获取最后和最前块的块号
+    last_block = Block(query_last_block(mydb)).get_number()
     head_number = Block(query_first_block(mydb)).get_number()
+
     # 循环获取块信息，并解析
     while True:
-        # 如果是块没更新，就再再获取，总之不能漏
+        # 如果网速非常快，或者用的本地节点，或许可以加个 sleep(1)减少浪费资源?
+
+        # 如果是块没更新，就再获取，总之不能漏
         new_block = api.get_block(last_block + 1)
         if new_block == {}:
             continue
+
+        # 始终保持最后一块和最前一块差1天时间，检查最前面的一块是不是过期了，是就减去
         if cut_head(head_number):
             head_number += 1
             continue
 
-        new_block = Block(new_block)
-
-        analyze(new_block)
+        analyze(Block(new_block))
         print('{}号块已解析'.format(str(last_block)))
         last_block += 1
 
@@ -368,6 +385,8 @@ def init_top_list():
 
 
 # 查询数据库里的数据
+# 存在数据库里的 地址 都是hex形式的，因为API也是这个形式，方便程序处理
+# 地址在查询的时候会实时base58处理，方便查看
 def query_data():
     global mydb
     clear_screen()
@@ -385,7 +404,7 @@ def query_data():
             tb = pt.PrettyTable()
             tb.field_names = ['txID', 'owner_address', 'to_address', 'amount', 'others']
             for i in tmp:
-                i[1] = hex_to_base58(i[1]).decode()
+                i[1] = hex_to_base58(i[1]).decode()  # 地址类型都要做这个处理
                 i[2] = hex_to_base58(i[2]).decode()
                 tb.add_row(i)
             print(tb)
@@ -398,13 +417,12 @@ def query_data():
                 i[1] = bytes.fromhex(i[1]).decode() if i[1] != "5f" else "trade TRX for another token"
                 i[2] = hex_to_base58(i[2]).decode()
                 i[3] = hex_to_base58(i[3]).decode()
-
                 tb.add_row(i)
             print(tb)
 
         elif chose == '3':
             tmp = query_top_app(mydb)
-            # 获取balance
+            # 获取balance,并求和
             for one_app in tmp:
                 addr_list = one_app[0]
                 for addr_single in addr_list:
@@ -413,12 +431,12 @@ def query_data():
             tb.field_names = ['addresses', 'name', 'all_transaction_count', 'day_transaction', 'balance',
                               'day_transfer', 'DAU']
             for i in tmp:
-                # i[0] = hex_to_base58(i[0]).decode()
                 i[0] = 'too long'
                 i[6] = len(i[6])
-                # i[1] = hex_to_base58(i[1]).decode()
                 tb.add_row(i)
             print(tb)
+
+        # 因为有时候屏幕一行显示不下，所以去掉了'to_address'这个字段
         elif chose == '4':
             tmp = query_big_token_transfer(mydb, 0)
             tb = pt.PrettyTable()
@@ -442,11 +460,9 @@ def set_app():
         an_address = input('please input the address of app,input 666 to quit\n')
         if an_address == '666':
             break
-
         an_address = base58_to_hex(an_address)
         addresses.append(an_address)
     name = input('please input the name of app\n')
-    # balance = api.get_balance(address)
     top = Top(addresses, name)
     insert_top_dapp(mydb, top)
 

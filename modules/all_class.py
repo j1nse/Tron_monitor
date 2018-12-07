@@ -143,20 +143,26 @@ class Block:
     def get_number(self):
         return self.block_header['raw_data']['number']
 
-    def get_txTrieRoot(self):
-        return self.block_header['raw_data']['txTrieRoot']
-
-    def get_witness_address(self):
-        return self.block_header['raw_data']['witness_address']
-
-    def get_parentHash(self):
-        return self.block_header['raw_data']['parentHash']
-
-    def get_version(self):
-        return self.block_header['raw_data']['version']
 
     def get_timestamp(self):
         return self.block_header['raw_data']['timestamp'] / 1000
 
+    def get_witness_address(self):
+        return self.block_header['raw_data']['witness_address']
+
+# 下面的方法都暂时用不上
+'''
+    def get_version(self):
+        return self.block_header['raw_data']['version']
+        
     def get_witness_signature(self):
         return self.block_header['witness_signature']
+        
+    def get_txTrieRoot(self):
+        return self.block_header['raw_data']['txTrieRoot']
+
+    
+
+    def get_parentHash(self):
+        return self.block_header['raw_data']['parentHash']
+'''

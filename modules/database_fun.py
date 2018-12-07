@@ -1,9 +1,21 @@
 from json import dumps, loads
-from base64 import b64decode, b64encode
 
 
 # 这个文件里包含所有针对数据库的函数，根据名字就知道作用了
-# .replace(''','\\'')
+
+# 反序列化str对象
+def deserialization(tmp, all_data):
+    for i in tmp:
+        one_row = []
+        for j in i:
+            if type(j) == str:
+                one_row.append(loads(j))
+            else:
+                one_row.append(j)
+        all_data.append(one_row)
+    return all_data
+
+
 def insert_block(db, block):
     cursor = db.cursor()
     word = ''' \
@@ -104,16 +116,11 @@ SELECT blockID,number,block_header \
     tmp = cursor.fetchall()
     all_data = []
     if tmp:
-        for i in tmp:
-            one_row = []
-            for j in i:
-                if type(j) == str:
-                    one_row.append(loads(j))
-                else:
-                    one_row.append(j)
-            all_data.append(one_row)
+        all_data = deserialization(tmp, all_data)
     else:
         return {}
+
+    # 只返回需要的信息即可
     result = {"blockID": all_data[0][0],
               "block_header": all_data[0][2],
               'transactions': {}
@@ -131,17 +138,13 @@ SELECT blockID,number, block_header \
     cursor.execute(word)
     tmp = cursor.fetchall()
     all_data = []
+    # 如果不为空，就反序列化，否则直接返回空字典
     if tmp:
-        for i in tmp:
-            one_row = []
-            for j in i:
-                if type(j) == str:
-                    one_row.append(loads(j))
-                else:
-                    one_row.append(j)
-            all_data.append(one_row)
+        all_data = deserialization(tmp, all_data)
     else:
         return {}
+
+    # 只返回需要的信息即可
     result = {"blockID": all_data[0][0],
               "block_header": all_data[0][2],
               'transactions': {}
@@ -160,7 +163,6 @@ VALUES ('{}','{}','{}','{}',{}) \
         dumps(transaction.get_txID()).replace('\"', '\\"'),
         dumps(transaction.get_asset_name()).replace('\"', '\\"'),
         dumps(transaction.get_owner_address()).replace('\"', '\\"'),
-
         dumps(transaction.get_to_address()).replace('\"', '\\"'),
         transaction.get_amount()
     )
@@ -178,15 +180,9 @@ def query_big_transfer(db):
     cursor.execute(word)
     tmp = cursor.fetchall()
     all_data = []
+    # 这个循环用于把str类型的变量都反序列化
     if tmp:
-        for i in tmp:
-            one_row = []
-            for j in i:
-                if type(j) == str:
-                    one_row.append(loads(j))
-                else:
-                    one_row.append(j)
-            all_data.append(one_row)
+        all_data = deserialization(tmp, all_data)
     cursor.close()
     return all_data
 
@@ -206,15 +202,9 @@ SELECT txID,asset_name,owner_address,amount,others \
     cursor.execute(word)
     tmp = cursor.fetchall()
     all_data = []
+    # 这个循环用于把str类型的变量都反序列化
     if tmp:
-        for i in tmp:
-            one_row = []
-            for j in i:
-                if type(j) == str:
-                    one_row.append(loads(j))
-                else:
-                    one_row.append(j)
-            all_data.append(one_row)
+        all_data = deserialization(tmp, all_data)
     cursor.close()
     return all_data
 
@@ -229,14 +219,7 @@ def query_top_app(db):
     tmp = cursor.fetchall()
     all_data = []
     if tmp:
-        for i in tmp:
-            one_row = []
-            for j in i:
-                if type(j) == str:
-                    one_row.append(loads(j))
-                else:
-                    one_row.append(j)
-            all_data.append(one_row)
+        all_data = deserialization(tmp, all_data)
     cursor.close()
     return all_data
 

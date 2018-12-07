@@ -3,7 +3,7 @@
 _tables = dict()
 _tables['block'] = ''' \
 CREATE TABLE `block` ( \
-`blockID` varchar(70) PRIMARY KEY NOT NULL, \
+`blockID` char(66) PRIMARY KEY NOT NULL, \
 `number` BIGINT  NOT NULL, \
 `block_header` varchar(1024) NOT NULL, \
 `transactions` varchar(8000) NOT NULL \
@@ -12,23 +12,13 @@ CREATE TABLE `block` ( \
 
 _tables['transactions'] = ''' \
 CREATE TABLE `transactions`( \
-`txID` varchar(70) PRIMARY KEY NOT NULL, \
+`txID` char(66) PRIMARY KEY NOT NULL, \
 `ret` varchar(30), \
-`signature` varchar(140)  NOT NULL, \
+`signature` char(138)  NOT NULL, \
 `raw_data` varchar(1024) NOT NULL \
 ) \
 '''
-# 废弃
-"""
-_tables['raw_data'] = ''' \
-CREATE TABLE `raw_data`( \
-`txID` varchar(70) PRIMARY KEY NOT NULL, \
-`contract` varchar(1024), \
-`fee_limit` varchar(30), \
-`timestamp` varchar(30) \
-) \
-'''
-"""
+
 
 _tables['top_DAPP'] = ''' \
 CREATE TABLE `top_DAPP` ( \
@@ -44,9 +34,9 @@ users varchar(50000) \
 
 _tables['big_transfer'] = ''' \
 CREATE TABLE `big_transfer`( \
-`txID` varchar(70) PRIMARY KEY NOT NULL, \
-owner_address varchar(50), \
-to_address  varchar(50), \
+`txID` char(66) PRIMARY KEY NOT NULL, \
+owner_address char(44), \
+to_address  char(44), \
 amount FLOAT, \
 others varchar(1024) \
 ) \
@@ -54,10 +44,10 @@ others varchar(1024) \
 
 _tables['big_token_transfer'] = ''' \
 CREATE TABLE `big_token_transfer`( \
-`txID` varchar(70) PRIMARY KEY NOT NULL , \
+`txID` char(66) PRIMARY KEY NOT NULL , \
 asset_name varchar(70) ,\
-owner_address varchar(50), \
-to_address varchar(50), \
+owner_address char(44), \
+to_address char(44), \
 amount FLOAT, \
 others varchar(1024) \
 ) \
