@@ -15,13 +15,7 @@
 
 #### how to use
 
-you need write a config file named `setting.conf` by yourself or just follow the program to write it. 
-
-```json
-{"full_node": "https://api.trongrid.io", "solidity_node": "https://api.trongrid.io", "event_server": "https://api.trongrid.io", "database": "tron0", "user": "root", "host": "localhost", "password": "root","Max_transfer":1000000000000,"Max_transfer_token":1000000000000}
-```
-
-you'd better use `json.dump`to create it
+you need write a config file named `setting.conf` by yourself and just follow the `setting_example.conf`to write it. And you'd better use `json.dump`to create it
 
 `python tron_client.py`
 
@@ -61,7 +55,7 @@ ends on 12.10(but I have to prepare for the final  examination...)
 
 ### mind
 
-final examination !!!!!!!!!!!!!!!!!!!!!!!!!!!
+school final examination !!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 debug and optimize !!!
 
