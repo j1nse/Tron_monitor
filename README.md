@@ -10,6 +10,8 @@
 - mysql.connector
 - prettytable
 - pysocks(if you need socks proxy)
+- base58
+- apscheduler
 
 #### how to use
 
