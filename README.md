@@ -1,7 +1,7 @@
 # Tron_monitor
 ## a project to monitor the Tron
 
-程序还不完善，但是基本功都能用了....
+基本功都能用了，不过还有很大的优化空间
 
 #### requirement
 
@@ -42,8 +42,8 @@ PS: the **top app monitor** needs you to set by yourself, you need to type all a
 ### target
 
 - [x] TRON large transfer monitoring
-- [x] Top DApp balance/etc. Data collection(complete half)
-- [ ]  DAU
+- [x] Top DApp balance/etc. Data collection
+- [x]  DAU
 
 -----
 
