@@ -85,7 +85,7 @@ INSERT INTO big_transfer \
 VALUES ('{}','{}','{}',{}) \
 '''.format(
         dumps(transaction.get_txID()).replace('\"', '\\"'),
-        dumps(transaction.get_owner()).replace('\"', '\\"'),
+        dumps(transaction.get_owner_address()).replace('\"', '\\"'),
         dumps(transaction.get_to_address()).replace('\"', '\\"'),
         transaction.get_amount()
     )

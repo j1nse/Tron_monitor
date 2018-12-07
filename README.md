@@ -18,7 +18,7 @@
 you need write a config file named `setting.conf` by yourself or just follow the program to write it. 
 
 ```json
-{"full_node": "https://api.trongrid.io", "solidity_node": "https://api.trongrid.io", "event_server": "https://api.trongrid.io", "database": "tron", "user": "root", "host": "localhost", "password": "root"}
+{"full_node": "https://api.trongrid.io", "solidity_node": "https://api.trongrid.io", "event_server": "https://api.trongrid.io", "database": "tron0", "user": "root", "host": "localhost", "password": "root","Max_transfer":1000000000000,"Max_transfer_token":1000000000000}
 ```
 
 you'd better use `json.dump`to create it

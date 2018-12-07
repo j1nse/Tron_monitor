@@ -28,7 +28,7 @@ tron = 0
 api = 0
 top_list = []
 data_json = {}
-Max_transfer = 10 ** 12
+Max_transfer = 10 ** 12  # 默认值
 Max_transfer_token = 10 ** 12
 
 
@@ -44,6 +44,8 @@ def init_config():
     _database_password = input('please input the database_password\n')
     # maybe a more security way to store password?
     _database = input('please input the database name,like "Tron_watching"\n')
+    _Max_transfer = int(input('please input the Max_transfer\n'))
+    _Max_transfer_token = int(input('please input the _Max_transfer_token\n'))
 
     data = {
         'full_node': _full_node,
@@ -52,7 +54,9 @@ def init_config():
         'database': _database,
         'user': _database_user,
         'host': _database_host,
-        'password': _database_password
+        'password': _database_password,
+        'Max_transfer': _Max_transfer,
+        '_Max_transfer_token': _Max_transfer_token
     }
     with open('setting.conf', 'w+') as f:
         json.dump(data, f)
@@ -95,14 +99,15 @@ def init_create_db():
 
 
 def init():
-    global data_json, tron, api, mydb
+    global data_json, tron, api, mydb, Max_transfer, Max_transfer_token
 
     # 读取数据库配置到 data_json
     if not os.path.exists('setting.conf'):
         init_config()
     with open('setting.conf', 'r') as f:
         data_json = json.load(f)
-        check = ['user', 'password', 'host', 'database', 'full_node', 'solidity_node', 'event_server']
+        check = ['user', 'password', 'host', 'database', 'full_node', 'solidity_node', 'event_server', 'Max_transfer',
+                 'Max_transfer_token']
         for i in check:
             if i not in data_json:
                 return False
@@ -143,7 +148,8 @@ def init():
                 event_server=event_server,
                 )
     api = trx.Trx(tron)
-
+    Max_transfer = data_json['Max_transfer']
+    Max_transfer_token = data_json['Max_transfer_token']
     return True
 
 
@@ -230,7 +236,8 @@ def backtracking():
 
     yesterday = last_block.get_timestamp() - 3600 * 24
 
-    new_block = Block(api.get_block(first_block - 1))
+    new_block = Block(api.get_block(first_block - 2))
+    # -2 是因为有可能有1块已经分析完，但没有插入数据库(意外退出造成的)
     new_first_block_time = new_block.get_timestamp()
     back_number = new_block.get_number()
 

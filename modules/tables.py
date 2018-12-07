@@ -38,7 +38,7 @@ all_transaction_count  BIGINT NOT NULL, \
 day_transaction BIGINT NOT NULL, \
 balance BIGINT NOT NULL, \
 day_transfer FLOAT NOT NULL, \
-users varchar(5000) \
+users varchar(50000) \
 ) \
 '''
 
