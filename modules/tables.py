@@ -37,8 +37,8 @@ name varchar(30) PRIMARY KEY NOT NULL,
 all_transaction_count  BIGINT NOT NULL, \
 day_transaction BIGINT NOT NULL, \
 balance BIGINT NOT NULL, \
-day_users BIGINT NOT NULL, \
-day_transfer FLOAT NOT NULL
+day_transfer FLOAT NOT NULL, \
+users varchar(5000) \
 ) \
 '''
 

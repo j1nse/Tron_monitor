@@ -3,13 +3,14 @@ from tronapi.utils.help import hex_to_base58
 import os
 import prettytable as pt
 import mysql.connector
-# import time
 import json
 from mysql.connector import errorcode
 import modules.tables as tables
 import sys
 from modules.database_fun import *
 from modules.all_class import *
+from apscheduler.schedulers.background import BackgroundScheduler
+from base58 import b58decode_check
 
 '''
 1. TRON大額轉帳監控
@@ -151,6 +152,10 @@ def clear_screen():
     os.system('cls')
 
 
+def base58_to_hex(p):
+    return b58decode_check(p).hex()
+
+
 def analyze(new_block):
     global api, mydb, top_list
     trans = new_block.get_transactions()
@@ -165,10 +170,13 @@ def analyze(new_block):
             i = 0
             # addresses,name,all_transaction_count,day_transaction,balance,day_users,day_transfer
             # 对应0 1 2 3 4 5 6..
-            if txtype == 'TriggerSmartContract' and tx.get_contract_address().upper() in an_app['addresses']:
+            if txtype == 'TriggerSmartContract' and tx.get_contract_address() in an_app['addresses']:
+                if tx.get_owner_address() not in an_app['users']:
+                    top_list[i]['users'].append(tx.get_owner_address())
                 top_list[i]['all_transaction_count'] += 1
                 top_list[i]['day_transaction'] += 1
                 top_list[i]['day_transfer'] += tx.get_call_value()
+
                 # print(top_list[i]['day_transfer'])
                 update_top_app(
                     mydb,
@@ -177,8 +185,8 @@ def analyze(new_block):
                     top_list[i]['all_transaction_count'],
                     top_list[i]['day_transaction'],
                     top_list[i]['balance'],
-                    0,
-                    top_list[i]['day_transfer']
+                    top_list[i]['day_transfer'],
+                    top_list[i]['users']
                 )
                 i += 1
             else:
@@ -211,16 +219,16 @@ def analyze(new_block):
 def backtracking():
     global api, mydb
     # 获取今天0点时间(格林威治天文时间)
-    last_block_tmp = query_last_block(mydb)
-    if last_block_tmp != {}:
-        last_block_tmp = Block(last_block_tmp)
-        yesterday = last_block_tmp.get_timestamp() - 3600 * 24
-        # last_block = last_block_tmp.get_number()
-    else:
-        last_block_tmp = Block(api.get_current_block())
-        yesterday = last_block_tmp.get_timestamp() - 3600 * 24
+    last_block = query_last_block(mydb)
+    if last_block != {}:
+        last_block = Block(last_block)
+        first_block = Block(query_first_block(mydb)).get_number()
 
-    first_block = Block(query_first_block(mydb)).get_number()
+    else:
+        last_block = Block(api.get_current_block())
+        first_block = last_block.get_number()
+
+    yesterday = last_block.get_timestamp() - 3600 * 24
 
     new_block = Block(api.get_block(first_block - 1))
     new_first_block_time = new_block.get_timestamp()
@@ -257,7 +265,8 @@ def cut_head(head_number):
             i = 0
             # addresses,name,all_transaction_count,day_transaction,balance,day_users,day_transfer
             # 对应0 1 2 3 4 5 6..
-            if txtype == 'TriggerSmartContract' and tx.get_contract_address().upper() in an_app['addresses']:
+            if txtype == 'TriggerSmartContract' and tx.get_contract_address() in an_app['addresses']:
+
                 top_list[i]['day_transaction'] -= 1
                 top_list[i]['day_transfer'] -= tx.get_call_value()
                 update_top_app(
@@ -278,9 +287,29 @@ def cut_head(head_number):
     return True
 
 
+def clear_dapp_users():
+    global mydb
+    for i in len(top_list):
+        update_top_app(
+            mydb,
+            # 这里以后再改
+            top_list[i]['name'],
+            top_list[i]['all_transaction_count'],
+            top_list[i]['day_transaction'],
+            top_list[i]['balance'],
+            top_list[i]['day_transfer'],
+            []
+        )
+
+
 def work_begin():
     global api, mydb, top_list
     init_top_list()
+    scheduler = BackgroundScheduler()
+    # 每天凌晨1点清空DAU数据
+    scheduler.add_job(clear_dapp_users, 'cron', hour=1)
+    scheduler.start()
+
     if query_last_block(mydb) != {}:
         last_block = Block(query_last_block(mydb))
         first_block = Block(query_first_block(mydb))
@@ -299,7 +328,7 @@ def work_begin():
     head_number = Block(query_first_block(mydb)).get_number()
     # 循环获取块信息，并解析
     while True:
-        # 如果是块没更新，就再跳过，总之不能漏
+        # 如果是块没更新，就再再获取，总之不能漏
         new_block = api.get_block(last_block + 1)
         if new_block == {}:
             continue
@@ -314,7 +343,6 @@ def work_begin():
         last_block += 1
 
 
-
 # 初始化一个TOP_app字典，key是address, vaule是app的信息
 def init_top_list():
     global mydb, top_list
@@ -325,10 +353,10 @@ def init_top_list():
             'all_transaction_count': i[2],
             'day_transaction': i[3],
             'balance': i[4],
-            'day_users': i[5],
-            'day_transfer': i[6]
+            'day_transfer': i[5],
+            'users': i[6]
         }
-        # addresses, name, all_transaction_count, day_transaction, balance, day_users, day_transfer
+        # addresses, name, all_transaction_count, day_transaction, balance, day_users, day_transfer,users
         top_list.append(tmp)
 
 
@@ -363,6 +391,7 @@ def query_data():
                 i[1] = bytes.fromhex(i[1]).decode() if i[1] != "5f" else "trade TRX for another token"
                 i[2] = hex_to_base58(i[2]).decode()
                 i[3] = hex_to_base58(i[3]).decode()
+
                 tb.add_row(i)
             print(tb)
 
@@ -374,11 +403,12 @@ def query_data():
                 for addr_single in addr_list:
                     one_app[4] += api.get_balance(addr_single)
             tb = pt.PrettyTable()
-            tb.field_names = ['addresses', 'name', 'all_transaction_count', 'day_transaction', 'balance', 'day_users',
-                              'day_transfer']
+            tb.field_names = ['addresses', 'name', 'all_transaction_count', 'day_transaction', 'balance',
+                              'day_transfer', 'DAU']
             for i in tmp:
                 # i[0] = hex_to_base58(i[0]).decode()
                 i[0] = 'too long'
+                i[6] = len(i[6])
                 # i[1] = hex_to_base58(i[1]).decode()
                 tb.add_row(i)
             print(tb)
@@ -405,11 +435,12 @@ def set_app():
         an_address = input('please input the address of app,input 666 to quit\n')
         if an_address == '666':
             break
-        an_address = hex_to_base58(an_address)
+
+        an_address = base58_to_hex(an_address)
         addresses.append(an_address)
     name = input('please input the name of app\n')
     # balance = api.get_balance(address)
-    top = Top(addresses, name, 0, 0, 0)
+    top = Top(addresses, name)
     insert_top_dapp(mydb, top)
 
 

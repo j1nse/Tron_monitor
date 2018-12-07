@@ -61,16 +61,16 @@ def insert_top_dapp(db, top):
     cursor = db.cursor()
     word = '''\
 INSERT INTO top_DAPP \
-( addresses,name, all_transaction_count, day_transaction, balance, day_users, day_transfer ) \
-VALUES ('{}','{}',{},{},{},{},{})\
+( addresses,name, all_transaction_count, day_transaction, balance, day_transfer,users ) \
+VALUES ('{}','{}',{},{},{},{},'{}')\
 '''.format(
         dumps(top.get_addresses()).replace('\"', '\\"'),
         dumps(top.get_name()).replace('\"', '\\"'),
         dumps(top.get_all_transaction_count()),
         dumps(top.get_day_transaction()),
         dumps(top.get_balance()),
-        dumps(top.get_day_users()),
-        dumps(top.get_day_transfer())
+        dumps(top.get_day_transfer()),
+        dumps(top.get_users()).replace('\"', '\\"')
     )
     cursor.execute(word)
     db.commit()
@@ -222,7 +222,7 @@ SELECT txID,asset_name,owner_address,amount,others \
 def query_top_app(db):
     cursor = db.cursor()
     word = '''\
-    SELECT addresses,name,all_transaction_count,day_transaction,balance,day_users,day_transfer \
+    SELECT addresses,name,all_transaction_count,day_transaction,balance,day_transfer,users \
     FROM top_DAPP ORDER BY all_transaction_count DESC \
     '''
     cursor.execute(word)
@@ -241,12 +241,13 @@ def query_top_app(db):
     return all_data
 
 
-def update_top_app(db, name, all_transaction_count, day_transaction, balance, day_users, day_transfer):
+def update_top_app(db, name, all_transaction_count, day_transaction, balance, day_transfer, users):
     cursor = db.cursor()
     word = '''\
-    UPDATE top_DAPP SET all_transaction_count = {},day_transaction={},balance={},day_users={},day_transfer={} WHERE name = '{}' \
+    UPDATE top_DAPP SET all_transaction_count = {},day_transaction={},balance={},day_transfer={},users='{}' WHERE name = '{}' \
     '''.format(
-        all_transaction_count, day_transaction, balance, day_users, day_transfer, "\"" + name + "\""
+        all_transaction_count, day_transaction, balance, day_transfer, dumps(users).replace('\"', '\\"'),
+        "\"" + name + "\""
     )
     cursor.execute(word)
     db.commit()
@@ -286,7 +287,7 @@ TRUNCATE TABLE `top_DAPP`; \
 def clear_top_big_transfer(db):
     cursor = db.cursor()
     word = '''\
-TRUNCATE TABLE `big_transfer`; \
+TRUNCATE TABLE `big_transfer` \
 '''
     cursor.execute(word)
     db.commit()
@@ -296,13 +297,14 @@ TRUNCATE TABLE `big_transfer`; \
 def clear_top_big_token_transfer(db):
     cursor = db.cursor()
     word = '''\
-TRUNCATE TABLE `big_token_transfer`; \
+TRUNCATE TABLE `big_token_transfer` \
 '''
     cursor.execute(word)
     db.commit()
     cursor.close()
 
-def delete_block(db,number):
+
+def delete_block(db, number):
     cursor = db.cursor()
     word = '''\
 DELETE FROM `block` where number = {}  \

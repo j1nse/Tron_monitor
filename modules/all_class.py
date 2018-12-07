@@ -44,9 +44,6 @@ class Transaction:
     def get_data(self):
         return self.txdata['data']
 
-    def get_owner(self):
-        return self.txdata['owner_address']
-
     def get_contract(self):
         return self.raw_data['contract']
 
@@ -69,7 +66,7 @@ class Transaction:
         return self.ret[0]['contractRet']
 
     def get_timestamp(self):
-        return self.raw_data['timestamp']/1000
+        return self.raw_data['timestamp'] / 1000
 
     def get_asset_name(self):
         return self.txdata['asset_name'] if 'asset_name' in self.txdata else self.txdata['token_id']
@@ -80,21 +77,24 @@ class Top:
     all_transaction_count = 0
     day_transaction = 0
     balance = 0
-    day_users = 0
+    users = []
     day_transfer = 0
     name = ''
+
     # insert function:
     # address,name, all_transaction_count, day_transaction, balance, day_users, day_transfer
 
-    def __init__(self, addresses, name, all_transaction_count=0, day_transaction=0, balance=0, day_users=0,
-                 day_transfer=0):
+    def __init__(self, addresses, name, all_transaction_count=0, day_transaction=0, balance=0,
+                 day_transfer=0, users=None):
+        if users is None:
+            users = []
         self.addresses = addresses
         self.name = name
         self.all_transaction_count = all_transaction_count
         self.day_transaction = day_transaction
         self.balance = balance
-        self.day_users = day_users
         self.day_transfer = day_transfer
+        self.users = users
 
     def get_addresses(self):
         return self.addresses
@@ -111,8 +111,8 @@ class Top:
     def get_balance(self):
         return self.balance
 
-    def get_day_users(self):
-        return self.day_users
+    def get_users(self):
+        return self.users
 
     def get_day_transfer(self):
         return self.day_transfer
@@ -156,7 +156,7 @@ class Block:
         return self.block_header['raw_data']['version']
 
     def get_timestamp(self):
-        return self.block_header['raw_data']['timestamp']/1000
+        return self.block_header['raw_data']['timestamp'] / 1000
 
     def get_witness_signature(self):
         return self.block_header['witness_signature']
