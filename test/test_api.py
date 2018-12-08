@@ -18,4 +18,5 @@ tron = Tron(full_node=full_node,
 tron.default_block = 'latest'
 api=trx.Trx(tron)
 #print(api.get_current_block())
-print(api.get_transaction_info('b04e15337386134ab50952ebfedb653eef3632ddd6714e050c764c5eefc6a984'))
+print(api.get_transaction('c26a332a2a10f03bef44002d28484ae626e105d63f5eaad26dbda33d32ec76d6'))
+

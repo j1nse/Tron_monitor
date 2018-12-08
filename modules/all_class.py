@@ -4,6 +4,7 @@
 # Block
 # 用来实例化后实行解析操作
 
+
 class Transaction:
     txID = ''
     ret = []
@@ -70,6 +71,12 @@ class Transaction:
 
     def get_asset_name(self):
         return self.txdata['asset_name'] if 'asset_name' in self.txdata else self.txdata['token_id']
+
+    def get_frozen_balance(self):
+        return self.txdata['frozen_balance'] if 'frozen_balance' in self.txdata else 0
+
+    def get_frozen_duration(self):
+        return self.txdata['frozen_duration'] if 'frozen_duration' in self.txdata else 0
 
 
 class Top:
@@ -143,12 +150,12 @@ class Block:
     def get_number(self):
         return self.block_header['raw_data']['number']
 
-
     def get_timestamp(self):
         return self.block_header['raw_data']['timestamp'] / 1000
 
     def get_witness_address(self):
         return self.block_header['raw_data']['witness_address']
+
 
 # 下面的方法都暂时用不上
 '''

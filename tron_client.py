@@ -22,13 +22,20 @@ transactions奇异缺失
 
 # Global variable
 mydb = 0
-cursor = 0
-tron = 0
 api = 0
 top_list = []
 data_json = {}
 Max_transfer = 10 ** 12  # 默认值
 Max_transfer_token = 10 ** 12
+common_type = [
+    'TriggerSmartContract',
+    'TransferAssetContract',
+    'TransferContract',
+    'ExchangeTransactionContract',
+    'VoteWitnessContract',
+    'FreezeBalanceContract',
+    'UnfreezeBalanceContract'
+]
 
 
 # 没有配置文件,初始化一个
@@ -63,7 +70,7 @@ def init_config():
 
 # 建库，建表函数
 def init_create_db():
-    global data_json, mydb, cursor
+    global data_json, mydb
 
     # 建库
     mydb = mysql.connector.connect(
@@ -100,7 +107,7 @@ def init_create_db():
 
 # 初始化函数，用于读取配置文件，连接数据库，连接API
 def init():
-    global data_json, tron, api, mydb, Max_transfer, Max_transfer_token
+    global data_json, api, mydb, Max_transfer, Max_transfer_token
 
     # 读取数据库配置到 data_json, 若不存在配置文件则建一个
     if not os.path.exists('setting.conf'):
@@ -221,10 +228,15 @@ def analyze(new_block):
             insert_transaction(mydb, tx)
             insert_big_token_transfer(mydb, tx)
 
-        # common type
-        else:
-            continue
-        # 还有很多类型，慢慢加...
+        elif txtype == 'VoteWitnessContract':
+            insert_vote(mydb, tx)
+
+        elif txtype == 'FreezeBalanceContract' or txtype == 'UnfreezeBalanceContract':
+            insert_freeze(mydb, tx)
+
+        # rare type
+        elif txtype not in common_type:
+            insert_other(mydb, tx)
 
     # 插入块到数据库，表示分析完了
     insert_block(mydb, new_block)
@@ -397,6 +409,9 @@ def query_data():
             2.query big transfer of token
             3.query top app information (need to get balance, just wait a while)
             4.query big transfer of token(no to_address, in most case, trade in Exchange has no to_address)
+            5.query VoteWitnessContract
+            6.query FreezeBalanceContract transactions (if frozen_duration and frozen_balance are both 0 means UnfreezeBalanceContract)
+            7.query transactions of other type
             '''
         )
         if chose == '1':
@@ -416,7 +431,8 @@ def query_data():
             for i in tmp:
                 i[1] = bytes.fromhex(i[1]).decode() if i[1] != "5f" else "trade TRX for another token"
                 i[2] = hex_to_base58(i[2]).decode()
-                i[3] = hex_to_base58(i[3]).decode()
+                if i[3]:
+                    i[3] = hex_to_base58(i[3]).decode()
                 tb.add_row(i)
             print(tb)
 
@@ -446,6 +462,38 @@ def query_data():
                 i[1] = bytes.fromhex(i[1]).decode() if i[1] != "5f" else "trade TRX for another token"
                 tb.add_row(i)
             print(tb)
+        elif chose == '5':
+            tmp = query_vote(mydb)
+            tb = pt.PrettyTable()
+            tb.field_names = ['txID', 'owner_address', 'data']
+            for i in tmp:
+                i[1] = hex_to_base58(i[1]).decode()  # 地址类型都要做这个处理
+                # 以后再想办法
+                i[2] = 'too long, please get information from database'
+                tb.add_row(i)
+            print(tb)
+        elif chose == '6':
+            tmp = query_freeze(mydb)
+            tb = pt.PrettyTable()
+            tb.field_names = ['txID', 'owner_address', 'frozen_balance', 'frozen_duration']
+            for i in tmp:
+                i[1] = hex_to_base58(i[1]).decode()  # 地址类型都要做这个处理
+                if i[2] == 0 and i[3] == 0:
+                    i[3] = 'UnfreezeBalanceContract'
+                tb.add_row(i)
+            print(tb)
+
+        elif chose == '7':
+            tmp = query_other(mydb)
+            tb = pt.PrettyTable()
+            tb.field_names = ['txID', 'type', 'owner_address', 'data']
+            for i in tmp:
+                i[2] = hex_to_base58(i[2]).decode()  # 地址类型都要做这个处理
+                # 以后再想办法
+                i += ['too long, please get information from database']
+                tb.add_row(i)
+            print(tb)
+
         else:
             clear_screen()
             print('wrong input')

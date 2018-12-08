@@ -1,4 +1,5 @@
 from json import dumps, loads
+from modules.all_class import *
 
 
 # 这个文件里包含所有针对数据库的函数，根据名字就知道作用了
@@ -209,7 +210,7 @@ SELECT txID,asset_name,owner_address,amount,others \
     return all_data
 
 
-def query_top_app(db):
+def query_top_app(db) -> list:
     cursor = db.cursor()
     word = '''\
     SELECT addresses,name,all_transaction_count,day_transaction,balance,day_transfer,users \
@@ -295,3 +296,104 @@ DELETE FROM `block` where number = {}  \
     cursor.execute(word)
     db.commit()
     cursor.close()
+
+
+def insert_other(db, tx: Transaction):
+    cursor = db.cursor()
+    word = '''\
+INSERT INTO other_type \
+( txID,type,owner_address, data ) \
+VALUES ('{}','{}','{}','{}') \
+ '''.format(
+        dumps(tx.get_txID()).replace('\"', '\\"'),
+        dumps(tx.get_type()).replace('\"', '\\"'),
+        dumps(tx.get_owner_address()).replace('\"', '\\"'),
+        dumps(tx.get_txdata()).replace('\"', '\\"')
+
+    )
+    cursor.execute(word)
+    db.commit()
+    cursor.close()
+
+
+def query_other(db):
+    cursor = db.cursor()
+    word = '''\
+SELECT txID,type,owner_address \
+FROM other_type ORDER BY type\
+'''
+    cursor.execute(word)
+    tmp = cursor.fetchall()
+    all_data = []
+
+    if tmp:
+        all_data = deserialization(tmp, all_data)
+    cursor.close()
+    return all_data
+
+
+def insert_freeze(db, tx: Transaction):
+    cursor = db.cursor()
+    word = '''\
+INSERT INTO freeze_balance_contract \
+( txID,owner_address, frozen_balance,frozen_duration ) \
+VALUES ('{}','{}',{},{}) \
+'''.format(
+        dumps(tx.get_txID()).replace('\"', '\\"'),
+        dumps(tx.get_owner_address()).replace('\"', '\\"'),
+        dumps(tx.get_frozen_balance()).replace('\"', '\\"'),
+        dumps(tx.get_frozen_duration()).replace('\"', '\\"'),
+
+    )
+    cursor.execute(word)
+    db.commit()
+    cursor.close()
+
+
+def insert_vote(db, tx: Transaction):
+    cursor = db.cursor()
+    word = '''\
+INSERT INTO vote_witness_contract \
+( txID,owner_address, votes ) \
+VALUES ('{}','{}','{}') \
+'''.format(
+        dumps(tx.get_txID()).replace('\"', '\\"'),
+        dumps(tx.get_owner_address()).replace('\"', '\\"'),
+        dumps(tx.get_txdata()).replace('\"', '\\"')
+
+    )
+    cursor.execute(word)
+    db.commit()
+    cursor.close()
+
+
+def query_vote(db):
+    cursor = db.cursor()
+    word = '''\
+SELECT txID,owner_address,votes \
+FROM vote_witness_contract ORDER BY owner_address\
+'''
+    cursor.execute(word)
+    tmp = cursor.fetchall()
+    all_data = []
+
+    if tmp:
+        all_data = deserialization(tmp, all_data)
+    cursor.close()
+    return all_data
+
+
+def query_freeze(db):
+    cursor = db.cursor()
+    word = '''\
+SELECT txID,owner_address,frozen_balance,frozen_duration \
+FROM freeze_balance_contract ORDER BY frozen_duration\
+    '''
+    cursor.execute(word)
+    tmp = cursor.fetchall()
+    all_data = []
+
+    if tmp:
+        all_data = deserialization(tmp, all_data)
+    cursor.close()
+    return all_data

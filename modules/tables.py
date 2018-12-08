@@ -19,7 +19,6 @@ CREATE TABLE `transactions`( \
 ) \
 '''
 
-
 _tables['top_DAPP'] = ''' \
 CREATE TABLE `top_DAPP` ( \
 addresses varchar(500) NOT NULL, \
@@ -50,6 +49,32 @@ owner_address char(44), \
 to_address char(44), \
 amount FLOAT, \
 others varchar(1024) \
+) \
+'''
+
+_tables['other_type'] = ''' \
+CREATE TABLE `other_type`( \
+`txID` char(66) PRIMARY KEY NOT NULL , \
+`type` varchar(50) NOT NULL, \
+owner_address char(44), \
+data varchar(10000) \
+) \
+'''
+# VoteWitnessContract
+_tables['vote_witness_contract'] = ''' \
+CREATE TABLE `vote_witness_contract`( \
+`txID` char(66) PRIMARY KEY NOT NULL , \
+owner_address char(44), \
+votes varchar(10000) \
+) \
+'''
+
+_tables['freeze_balance_contract'] = ''' \
+CREATE TABLE `freeze_balance_contract`( \
+`txID` char(66) PRIMARY KEY NOT NULL , \
+owner_address char(44), \
+frozen_balance FLOAT, \
+frozen_duration INT \
 ) \
 '''
 
