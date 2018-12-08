@@ -23,6 +23,11 @@ PS: If your database doesn't exist, program will help you to create a new databa
 
 PS: the **top app monitor** needs you to set by yourself, you need to type all address of it(base58), and its name
 
+1. you need type `1.begin work`
+2. and then start a new terminal run program type `2.query`to query what you want to know
+3. if you want to monitor a DAPP, you need to know all of its address and name and type`3.set..` to set a DAPP.
+4. don't forget to set a proper number for `Max_transfer` and `Max_transfer_token` in `setting.conf`
+
 ------
 
 ## plan
