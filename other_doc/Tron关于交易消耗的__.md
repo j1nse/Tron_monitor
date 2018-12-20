@@ -112,12 +112,8 @@ Vote Rewards = 16 (TRX/block) *x* 20 (blocks/min) *x* 60 (min/hour) *x* 6 (hours
 
 `dbManager.adjustBalance(ownerAddress, -fee);`显而易见
 
-```java
-dbManager.adjustBalance(dbManager.getAccountStore().getBlackhole().getAddress().toByteArray(),
-    fee);//send to blackhole
-```
-
-发送fee到一个Map类型，其中key是"blackhole"，不清楚为啥要这么做，难道是fee守恒定理？
+`dbManager.adjustBalance(dbManager.getAccountStore().getBlackhole().getAddress().toByteArray(),
+​    fee);//send to blackhole`发送fee到一个Map类型，其中key是"blackhole"，不清楚为啥要这么做，难道是fee守恒定理？
 
 
 
