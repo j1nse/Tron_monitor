@@ -106,14 +106,59 @@ Vote Rewards = 16 (TRX/block) *x* 20 (blocks/min) *x* 60 (min/hour) *x* 6 (hours
 
 
 
-# 从代码看
+# 从代码看(待续)
 
 ## 部分函数解释
 
 `dbManager.adjustBalance(ownerAddress, -fee);`显而易见
 
-`dbManager.adjustBalance(dbManager.getAccountStore().getBlackhole().getAddress().toByteArray(),
-​    fee);//send to blackhole`发送fee到一个Map类型，其中key是"blackhole"，不清楚为啥要这么做，难道是fee守恒定理？
+`dbManager.adjustBalance(dbManager.getAccountStore().getBlackhole().getAddress().toByteArray(),fee);//send to blackhole`发送fee到一个Map类型，其中key是"blackhole"，不清楚为啥要这么做，难道是fee守恒定理？
+
+`public long calcFee()`这个函数是用来计算`fee`的，每个类型的合约计算方式不一样
+
+**有一段关于Frozen的代码，还没看懂
+
+## 发布Token(AssetIssue)
+
+```
+public long calcFee() {
+    return dbManager.getDynamicPropertiesStore().getAssetIssueFee();
+}
+```
+
+```
+dbManager.adjustBalance(ownerAddress, -fee);
+dbManager.adjustBalance(dbManager.getAccountStore().getBlackhole().getAddress().toByteArray(), fee);
+```
+
+这里的 `calcFee()`套了N层，还没看懂怎么算
+
+## 买储存(BuyStorage)
+
+```
+public long calcFee() {
+  return 0;
+}
+```
+
+```
+long quant = buyStorageContract.getQuant();
+storageMarket.buyStorage(accountCapsule, quant);
+```
+
+## 创建账户(CreateAccount)
+
+```
+public long calcFee() {
+  return dbManager.getDynamicPropertiesStore().getCreateNewAccountFeeInSystemContract();
+}
+```
+
+
+
+
+
+
 
 
 
