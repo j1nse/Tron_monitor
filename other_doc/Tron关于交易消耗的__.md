@@ -10,6 +10,8 @@
 
 使用情况就是，根据下面的计算，如果E和BP不够就会使用TRX余额代替。
 
+**不过很多账户都没有冻结TRX，也就是没有额外的E和BP。计算会比较容易。**
+
 ## 计算方面
 
 相比于Ether的gas，Tron有2种资源：Energy 和 Bandwidth Points.
