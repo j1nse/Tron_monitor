@@ -16,7 +16,7 @@
 
 相比于Ether的gas，Tron有2种资源：Energy 和 Bandwidth Points.
 
-1个Energy可以让CPU为你运行1秒，1个Bandwidth Points可以让你处理一字节的transaction.
+1个Energy可以让CPU为你运行1微秒，1个Bandwidth Points可以让你处理一字节的transaction.
 
 获取E：冻结自己的TRX，可以按比例获得E，也就是说只要你冻的比别人多就可以获得更多的E. 计算公式:`获得的能量=为获得能量而冻结的TRX /为在整个网络中获得能量而冻结的总TRX * 50_000_000_000`
 
